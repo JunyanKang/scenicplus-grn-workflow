@@ -13,7 +13,10 @@ RELOCATE_INSTALLER="${RELOCATE_INSTALLER:-1}"
 PRECHECK_ONLY="${PRECHECK_ONLY:-0}"
 LOG_DIR="${LOG_DIR:-$SCRIPT_DIR/logs}"
 GITHUB_TRIES="${GITHUB_TRIES:-3}"
-VENDOR_GITHUB_DIR="${VENDOR_GITHUB_DIR:-$SCRIPT_DIR/vendor/github}"
+ARCHIVES_DIR="${ARCHIVES_DIR:-$SCRIPT_DIR/archives}"
+VENDOR_DIR="${VENDOR_DIR:-$SCRIPT_DIR/.vendor}"
+VENDOR_ARCHIVE="${VENDOR_ARCHIVE:-$ARCHIVES_DIR/vendor.tar.gz}"
+VENDOR_GITHUB_DIR="${VENDOR_GITHUB_DIR:-$VENDOR_DIR/github}"
 R_INSTALL_NCPUS="${R_INSTALL_NCPUS:-2}"
 INSTALL_AUTOZYME="${INSTALL_AUTOZYME:-1}"
 INSTALL_AUTOZYME_R="${INSTALL_AUTOZYME_R:-1}"
@@ -236,6 +239,45 @@ path_is_inside() {
   [[ "$child" == "$parent" || "$child" == "$parent/"* ]]
 }
 
+copy_distribution_assets() {
+  local target_dir="$1"
+  mkdir -p "$target_dir/locks"
+  mkdir -p "$target_dir/archives"
+  cp -f \
+    "$SCRIPT_DIR/install.sh" \
+    "$SCRIPT_DIR/check_environment.sh" \
+    "$SCRIPT_DIR/initialize_scenicplus_project.sh" \
+    "$SCRIPT_DIR/install_r.R" \
+    "$SCRIPT_DIR/pip-constraints.txt" \
+    "$SCRIPT_DIR/VERSION" \
+    "$SCRIPT_DIR/VERSION_LOCK.md" \
+    "$SCRIPT_DIR/CHANGELOG.md" \
+    "$SCRIPT_DIR/RELEASE_NOTES.md" \
+    "$SCRIPT_DIR/environment-linux-64.yml" \
+    "$SCRIPT_DIR/environment-macos-arm64.yml" \
+    "$SCRIPT_DIR/README.md" \
+    "$SCRIPT_DIR/README.zh-CN.md" \
+    "$SCRIPT_DIR/SCENICPLUS_STEP_BY_STEP.md" \
+    "$SCRIPT_DIR/SCENICPLUS_STEP_BY_STEP.zh-CN.md" \
+    "$SCRIPT_DIR/scenicplus_config_template.yaml" \
+    "$target_dir/"
+  cp -f "$SCRIPT_DIR/locks/environment-linux-64.solved-lock.yml" "$target_dir/locks/"
+  if [[ -s "$VENDOR_ARCHIVE" ]]; then
+    cp -f "$VENDOR_ARCHIVE" "$target_dir/archives/vendor.tar.gz"
+  elif [[ -d "$VENDOR_DIR" ]]; then
+    rm -rf "$target_dir/.vendor"
+    cp -a "$VENDOR_DIR" "$target_dir/.vendor"
+  fi
+  if [[ -d "$SCRIPT_DIR/modules" ]]; then
+    rm -rf "$target_dir/modules"
+    cp -a "$SCRIPT_DIR/modules" "$target_dir/modules"
+  fi
+  if [[ -d "$SCRIPT_DIR/scripts" ]]; then
+    rm -rf "$target_dir/scripts"
+    cp -a "$SCRIPT_DIR/scripts" "$target_dir/scripts"
+  fi
+}
+
 copy_to_conda_share_if_needed() {
   local target_dir="$CONDA_ROOT/share/scenicplus-grn-installer"
   if [[ "$RELOCATE_INSTALLER" != "1" || "${SCENICPLUS_INSTALLER_RELOCATED:-0}" == "1" ]]; then
@@ -257,42 +299,11 @@ copy_to_conda_share_if_needed() {
   check_writable_dir "$CONDA_ROOT"
   mkdir -p "$CONDA_ROOT/share"
   mkdir -p "$target_dir"
-  mkdir -p "$target_dir/locks"
-	  cp -f \
-	    "$SCRIPT_DIR/install.sh" \
-	    "$SCRIPT_DIR/check_environment.sh" \
-	    "$SCRIPT_DIR/initialize_scenicplus_project.sh" \
-    "$SCRIPT_DIR/install_r.R" \
-    "$SCRIPT_DIR/pip-constraints.txt" \
-    "$SCRIPT_DIR/VERSION" \
-    "$SCRIPT_DIR/VERSION_LOCK.md" \
-    "$SCRIPT_DIR/CHANGELOG.md" \
-    "$SCRIPT_DIR/RELEASE_NOTES.md" \
-    "$SCRIPT_DIR/environment-linux-64.yml" \
-    "$SCRIPT_DIR/environment-macos-arm64.yml" \
-    "$SCRIPT_DIR/README.md" \
-    "$SCRIPT_DIR/README.zh-CN.md" \
-    "$SCRIPT_DIR/SCENICPLUS_STEP_BY_STEP.md" \
-    "$SCRIPT_DIR/SCENICPLUS_STEP_BY_STEP.zh-CN.md" \
-    "$SCRIPT_DIR/scenicplus_config_template.yaml" \
-    "$target_dir/"
-  cp -f "$SCRIPT_DIR/locks/environment-linux-64.solved-lock.yml" "$target_dir/locks/"
-  if [[ -d "$SCRIPT_DIR/vendor" ]]; then
-    rm -rf "$target_dir/vendor"
-    cp -a "$SCRIPT_DIR/vendor" "$target_dir/vendor"
-  fi
-  if [[ -d "$SCRIPT_DIR/modules" ]]; then
-    rm -rf "$target_dir/modules"
-    cp -a "$SCRIPT_DIR/modules" "$target_dir/modules"
-  fi
-  if [[ -d "$SCRIPT_DIR/scripts" ]]; then
-    rm -rf "$target_dir/scripts"
-    cp -a "$SCRIPT_DIR/scripts" "$target_dir/scripts"
-  fi
-	  cp -f "$SCRIPT_DIR/check_environment.sh" "$CONDA_ROOT/bin/scenicplus-grn-check"
-	  cp -f "$SCRIPT_DIR/initialize_scenicplus_project.sh" "$CONDA_ROOT/bin/scenicplus-grn-initialize"
-	  chmod +x "$CONDA_ROOT/bin/scenicplus-grn-check" "$CONDA_ROOT/bin/scenicplus-grn-initialize"
-	  chmod +x "$target_dir/install.sh" "$target_dir/check_environment.sh" "$target_dir/initialize_scenicplus_project.sh" "$target_dir/install_r.R"
+  copy_distribution_assets "$target_dir"
+  cp -f "$SCRIPT_DIR/check_environment.sh" "$CONDA_ROOT/bin/scenicplus-grn-check"
+  cp -f "$SCRIPT_DIR/initialize_scenicplus_project.sh" "$CONDA_ROOT/bin/scenicplus-grn-initialize"
+  chmod +x "$CONDA_ROOT/bin/scenicplus-grn-check" "$CONDA_ROOT/bin/scenicplus-grn-initialize"
+  chmod +x "$target_dir/install.sh" "$target_dir/check_environment.sh" "$target_dir/initialize_scenicplus_project.sh" "$target_dir/install_r.R"
   echo "Copied installer to: $target_dir"
   echo "Re-running from recommended directory."
   export SCENICPLUS_INSTALLER_RELOCATED=1
@@ -430,6 +441,37 @@ extract_archive_to_dest() {
   rm -rf "$tmpdir"
 }
 
+ensure_vendor_available() {
+  if [[ -d "$VENDOR_GITHUB_DIR" && -d "$VENDOR_DIR/mallet" ]]; then
+    return
+  fi
+  if [[ ! -d "$VENDOR_DIR" && -d "$SCRIPT_DIR/vendor" ]]; then
+    echo "Using legacy uncompressed vendor directory: $SCRIPT_DIR/vendor"
+    VENDOR_DIR="$SCRIPT_DIR/vendor"
+    VENDOR_GITHUB_DIR="$VENDOR_DIR/github"
+    return
+  fi
+  if [[ -s "$VENDOR_ARCHIVE" ]]; then
+    local tmpdir
+    echo "Expanding bundled vendor archive: $VENDOR_ARCHIVE"
+    rm -rf "$VENDOR_DIR"
+    tmpdir="$(mktemp -d)"
+    tar -xzf "$VENDOR_ARCHIVE" -C "$tmpdir"
+    if [[ ! -d "$tmpdir/vendor" ]]; then
+      rm -rf "$tmpdir"
+      die "Vendor archive did not contain a top-level vendor directory: $VENDOR_ARCHIVE"
+    fi
+    mv "$tmpdir/vendor" "$VENDOR_DIR"
+    rm -rf "$tmpdir"
+  fi
+  if [[ ! -d "$VENDOR_GITHUB_DIR" ]]; then
+    echo "No bundled vendor/github directory found. GitHub fallback archives will be unavailable."
+  fi
+  if [[ ! -d "$VENDOR_DIR/mallet" ]]; then
+    echo "No bundled vendor/mallet directory found. MALLET will be downloaded if INSTALL_MALLET=1."
+  fi
+}
+
 sha256_file() {
   local file="$1"
   if command -v sha256sum >/dev/null 2>&1; then
@@ -548,7 +590,7 @@ install_mallet() {
     echo "INSTALL_MALLET=0: skipping MALLET."
     return
   fi
-  local archive="$SCRIPT_DIR/vendor/mallet/mallet-${MALLET_VERSION}.zip"
+  local archive="$VENDOR_DIR/mallet/mallet-${MALLET_VERSION}.zip"
   local workdir="$1"
   local zip_path="$archive"
   if [[ ! -s "$zip_path" ]]; then
@@ -735,53 +777,24 @@ install_source_layer() {
   rm -rf "$CONDA_PREFIX/opt/cluster-buster"
   cp -a "$workdir/cluster-buster" "$CONDA_PREFIX/opt/cluster-buster"
 
-	  install_autozyme_python "$workdir"
-	  install_mallet "$workdir"
+  install_autozyme_python "$workdir"
+  install_mallet "$workdir"
 
-	  rm -rf "$workdir"
+  rm -rf "$workdir"
   trap - RETURN
 }
 
 copy_recipe_into_env() {
   mkdir -p "$CONDA_PREFIX/share/scenicplus-grn"
-  mkdir -p "$CONDA_PREFIX/share/scenicplus-grn/locks"
-	  cp -f \
-	    "$SCRIPT_DIR/install.sh" \
-	    "$SCRIPT_DIR/check_environment.sh" \
-	    "$SCRIPT_DIR/initialize_scenicplus_project.sh" \
-    "$SCRIPT_DIR/install_r.R" \
-    "$SCRIPT_DIR/pip-constraints.txt" \
-    "$SCRIPT_DIR/VERSION" \
-    "$SCRIPT_DIR/VERSION_LOCK.md" \
-    "$SCRIPT_DIR/CHANGELOG.md" \
-    "$SCRIPT_DIR/RELEASE_NOTES.md" \
-    "$SCRIPT_DIR/environment-linux-64.yml" \
-    "$SCRIPT_DIR/environment-macos-arm64.yml" \
-    "$SCRIPT_DIR/README.md" \
-    "$SCRIPT_DIR/README.zh-CN.md" \
-    "$SCRIPT_DIR/SCENICPLUS_STEP_BY_STEP.md" \
-    "$SCRIPT_DIR/SCENICPLUS_STEP_BY_STEP.zh-CN.md" \
-    "$SCRIPT_DIR/scenicplus_config_template.yaml" \
-    "$CONDA_PREFIX/share/scenicplus-grn/"
-  cp -f "$SCRIPT_DIR/locks/environment-linux-64.solved-lock.yml" "$CONDA_PREFIX/share/scenicplus-grn/locks/"
-  if [[ -d "$SCRIPT_DIR/vendor" ]]; then
-    rm -rf "$CONDA_PREFIX/share/scenicplus-grn/vendor"
-    cp -a "$SCRIPT_DIR/vendor" "$CONDA_PREFIX/share/scenicplus-grn/vendor"
-  fi
-  if [[ -d "$SCRIPT_DIR/modules" ]]; then
-    rm -rf "$CONDA_PREFIX/share/scenicplus-grn/modules"
-    cp -a "$SCRIPT_DIR/modules" "$CONDA_PREFIX/share/scenicplus-grn/modules"
-  fi
-  if [[ -d "$SCRIPT_DIR/scripts" ]]; then
-    rm -rf "$CONDA_PREFIX/share/scenicplus-grn/scripts"
-    cp -a "$SCRIPT_DIR/scripts" "$CONDA_PREFIX/share/scenicplus-grn/scripts"
+  copy_distribution_assets "$CONDA_PREFIX/share/scenicplus-grn"
+  if [[ -d "$CONDA_PREFIX/share/scenicplus-grn/scripts" ]]; then
     find "$CONDA_PREFIX/share/scenicplus-grn/scripts" -type f -name "*.py" -exec chmod +x {} \;
   fi
-	  cp -f "$SCRIPT_DIR/check_environment.sh" "$CONDA_ROOT/bin/scenicplus-grn-check"
-	  cp -f "$SCRIPT_DIR/initialize_scenicplus_project.sh" "$CONDA_ROOT/bin/scenicplus-grn-initialize"
-	  rm -f "$CONDA_ROOT/bin/scenicplus-grn-init-parameters"
-	  chmod +x "$CONDA_ROOT/bin/scenicplus-grn-check" "$CONDA_ROOT/bin/scenicplus-grn-initialize"
-	  chmod +x "$CONDA_PREFIX/share/scenicplus-grn/install.sh" "$CONDA_PREFIX/share/scenicplus-grn/check_environment.sh" "$CONDA_PREFIX/share/scenicplus-grn/initialize_scenicplus_project.sh" "$CONDA_PREFIX/share/scenicplus-grn/install_r.R"
+  cp -f "$SCRIPT_DIR/check_environment.sh" "$CONDA_ROOT/bin/scenicplus-grn-check"
+  cp -f "$SCRIPT_DIR/initialize_scenicplus_project.sh" "$CONDA_ROOT/bin/scenicplus-grn-initialize"
+  rm -f "$CONDA_ROOT/bin/scenicplus-grn-init-parameters"
+  chmod +x "$CONDA_ROOT/bin/scenicplus-grn-check" "$CONDA_ROOT/bin/scenicplus-grn-initialize"
+  chmod +x "$CONDA_PREFIX/share/scenicplus-grn/install.sh" "$CONDA_PREFIX/share/scenicplus-grn/check_environment.sh" "$CONDA_PREFIX/share/scenicplus-grn/initialize_scenicplus_project.sh" "$CONDA_PREFIX/share/scenicplus-grn/install_r.R"
 }
 
 run_checks() {
@@ -812,6 +825,7 @@ main() {
   CONDA_BIN="$CONDA_ROOT/bin/conda"
 
   copy_to_conda_share_if_needed "$@"
+  ensure_vendor_available
   check_permissions
 
   ENV_FILE="$(select_env_file)"

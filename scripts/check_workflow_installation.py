@@ -47,6 +47,7 @@ REQUIRED_SCRIPTS = [
     "record_scenicplus_provenance.py",
     "compare_scenicplus_stability.py",
     "test_eregulon_auc_by_condition.py",
+    "audit_scenicplus_output_tiers.py",
     "plot_scenicplus_publication_outputs.py",
     "run_scenicplus_postprocess.py",
 ]

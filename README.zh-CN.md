@@ -16,18 +16,19 @@ Environment recipes and pinned Python layer:
   pip-constraints.txt                Required by the pinned pip supplement.
 
 Offline/restricted-network source archives:
-  vendor/github/                     Required for robust installation when GitHub is slow or blocked.
-                                      Also used by default AutoZyme installation.
-  vendor/mallet/                     Bundled MALLET 2.0.8 archive used by the default MALLET installation.
+  archives/vendor.tar.gz             Required in release archives for robust installation when GitHub is slow or blocked.
+                                      install.sh 会在运行时解压到隐藏缓存 .vendor/。
+  .vendor/github/                    运行时解出的 pinned source archives；GitHub 重试失败后使用。
+  .vendor/mallet/                    运行时解出的 MALLET 2.0.8 archive；默认 MALLET 安装使用。
 
 Installed workflow assets:
   initialize_scenicplus_project.sh   User-facing one-step initializer after installation.
                                       Checks the environment, updates scenicplus_project.env, then initializes the project runtime files.
-  scripts/                           Required for the step-by-step workflow after installation.
+  scripts/                           Required executable workflow entry points after installation.
                                       Installed to $CONDA_PREFIX/share/scenicplus-grn/scripts/.
                                       Includes project parameter setup, raw-data sample-sheet generation,
                                       pycisTopic, cisTarget DB, SCENIC+ config, Snakemake and postprocessing wrappers.
-  modules/                           Required helper modules used by workflow scripts.
+  modules/                           Required internal helper modules imported by scripts; not user-facing commands.
                                       Installed to $CONDA_PREFIX/share/scenicplus-grn/modules/.
   scenicplus_config_template.yaml     Required Snakemake config template used by workflow generators.
 
@@ -81,7 +82,7 @@ $CONDA_ROOT/share/scenicplus-grn-installer
 6. 如果 base 中没有 mamba，则先用 conda 安装 mamba。
 7. 创建或更新独立环境 scenicplus-grn。
 8. 安装由 conda/mamba 解析的 Python、命令行工具、基因组学工具和 R 基础层。
-9. 安装小型 pinned pip supplement，以及固定 commit 的 SCENIC+/pycisTopic/pycistarget 源码层。每个 GitHub 源会尝试 3 次；如果 GitHub 不稳定，则使用 vendor/github 中的本地归档。
+9. 必要时先把 `archives/vendor.tar.gz` 解压成 `.vendor/`，再安装小型 pinned pip supplement，以及固定 commit 的 SCENIC+/pycisTopic/pycistarget 源码层。每个 GitHub 源会尝试 3 次；如果 GitHub 不稳定，则使用 `.vendor/github` 中的本地归档。
 10. 默认安装 MALLET 2.0.8，用于 pycisTopic MALLET LDA backend，并通过一次小型 import-file 测试验证 wrapper。
 11. 安装 metacell workflow 所需的 R/hdWGCNA 层；GitHub 不可用时使用 bundled pinned source archive。
 12. 运行 check_environment.sh。
@@ -320,7 +321,7 @@ Linux 下，如果没有设置 `CONDA_SUBDIR`，脚本会导出 `CONDA_SUBDIR=li
 
 ## 安装内容
 
-安装器版本锁定到本地 macOS 成功 dry run。Linux recipe 是 conda-first：Python、CLI、genomics、SCENIC 相关包和 R base 由 mamba 从 conda-forge/bioconda 解析，并兼容 CentOS7/glibc 2.17。`environment-linux-64.yml` 固定顶层安装版本；`locks/environment-linux-64.solved-lock.yml` 记录完整 dry-run solve，包括传递依赖 build string，用于审计和排错。pip 只用于小型 pinned supplement 和精确 GitHub source commits。SCENIC+/pycisTopic/pycistarget source commits 在不同平台保持一致。安装器还包含 `vendor/github` 中的精确源码归档，避免受限网络下 GitHub 失败阻断安装。本地 bundled-source 安装时，安装器会显式把 pinned package versions 传给 setuptools-scm，因此 GitHub archive tarball 不需要 `.git` 元数据也能可重复构建。完整版本摘要见 `VERSION_LOCK.md`。
+安装器版本锁定到本地 macOS 成功 dry run。Linux recipe 是 conda-first：Python、CLI、genomics、SCENIC 相关包和 R base 由 mamba 从 conda-forge/bioconda 解析，并兼容 CentOS7/glibc 2.17。`environment-linux-64.yml` 固定顶层安装版本；`locks/environment-linux-64.solved-lock.yml` 记录完整 dry-run solve，包括传递依赖 build string，用于审计和排错。pip 只用于小型 pinned supplement 和精确 GitHub source commits。SCENIC+/pycisTopic/pycistarget source commits 在不同平台保持一致。release archive 还包含 `archives/vendor.tar.gz`；`install.sh` 会在安装前把它解压为 `.vendor/`，避免受限网络下 GitHub 失败阻断安装。本地 bundled-source 安装时，安装器会显式把 pinned package versions 传给 setuptools-scm，因此 GitHub archive tarball 不需要 `.git` 元数据也能可重复构建。完整版本摘要见 `VERSION_LOCK.md`。
 
 Workflow 脚本和 helper modules 安装在独立 conda 环境中，不安装到全局系统目录。激活后，`$CONDA_PREFIX` 指向该环境，脚本位于：
 
@@ -390,17 +391,17 @@ RcppParallel                 5.1.11-1, installed from CRAN source with dependenc
 
 AutoZyme 作为 no-dependency overlay 处理，不能升级、降级或替换已固定的 Scanpy、Seurat、SCENIC+、pycisTopic 或 R 包栈。安装器默认 `INSTALL_AUTOZYME=1` 和 `INSTALL_AUTOZYME_R=1`。分析脚本运行时可用 `AUTOZYME_DISABLED=1` 关闭 patch 激活。AutoZyme 可能输出与邻近上游版本有关的 warning；这些 warning 会进入日志，不改变包版本。
 
-GitHub 重试失败后使用的 bundled source archives：
+GitHub 重试失败后使用的 bundled source archives 存在于 `archives/vendor.tar.gz` 内，运行时会解压为：
 
 ```text
-vendor/github/pycisTopic-219225df56b32738d82cd14532b187a1483de04f.tar.gz
-vendor/github/pycistarget-5aa517604e4842539a7531c16905825dc7cb80fb.tar.gz
-vendor/github/scenicplus-e82b82f14b76618b850dfe442efc2421bb34f3b4.tar.gz
-vendor/github/create_cisTarget_databases-304d5dc1b15e5c923908a50a1ec291c3faaccf9c.tar.gz
-vendor/github/cluster-buster-5911cd6201b767a43316ce613afc6c9255dc3511.tar.gz
-vendor/github/LoomXpy-61995ff10940968eac2cee8fe48300ab477a15d0.tar.gz
-vendor/github/hdWGCNA-afa09abb890f5be087b63e510a7346e8e1952ecc.tar.gz
-vendor/github/SHA256SUMS
+.vendor/github/pycisTopic-219225df56b32738d82cd14532b187a1483de04f.tar.gz
+.vendor/github/pycistarget-5aa517604e4842539a7531c16905825dc7cb80fb.tar.gz
+.vendor/github/scenicplus-e82b82f14b76618b850dfe442efc2421bb34f3b4.tar.gz
+.vendor/github/create_cisTarget_databases-304d5dc1b15e5c923908a50a1ec291c3faaccf9c.tar.gz
+.vendor/github/cluster-buster-5911cd6201b767a43316ce613afc6c9255dc3511.tar.gz
+.vendor/github/LoomXpy-61995ff10940968eac2cee8fe48300ab477a15d0.tar.gz
+.vendor/github/hdWGCNA-afa09abb890f5be087b63e510a7346e8e1952ecc.tar.gz
+.vendor/github/SHA256SUMS
 ```
 
 Bundled archives 使用前会做 checksum 验证。若上传后的压缩包损坏，安装器会以 checksum error 停止，不会继续使用不完整源码树。

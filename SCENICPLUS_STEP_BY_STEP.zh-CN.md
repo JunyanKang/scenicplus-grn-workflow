@@ -657,7 +657,32 @@ results/scenicplus_stats/auc_by_condition_extended/condition_eregulon_auc_statis
 
 ## 12. SCENIC+ Result Figures
 
-完整 SCENIC+ 分析不应只停在表格。为 direct 和 extended eRegulon layer 各生成一套紧凑、干净的图和 source data。安装器提供 `plot_scenicplus_publication_outputs.py`，会写出 vector PDFs 和对应 source tables：
+完整 SCENIC+ 分析不应只停在表格，但图形输出应按科学证据层级组织，而不是按绘图函数是否容易调用来组织。先检查每一层证据是否已经具备：
+
+```bash
+python $SCENICPLUS_HOME/scripts/run_scenicplus_postprocess.py --task audit
+```
+
+审计输出：
+
+```text
+results/scenicplus_output_tiers/scenicplus_output_tier_audit.tsv
+results/scenicplus_output_tiers/scenicplus_output_tier_audit.pdf
+```
+
+科学输出层级：
+
+```text
+0. input/QC confidence: active RNA/ATAC cells, metadata, fragments, doublet and ATAC QC
+1. chromatin topics: major accessibility states and topic model quality
+2. region sets and DARs: topic-region programs and differential accessible regions
+3. motif/cisTarget evidence: project-specific motif enrichment database and motif2TF mapping
+4. eRegulon activity: TF-region-gene eRegulons and cell-state activity patterns
+5. condition effects: sample-level differential eRegulon activity across conditions
+6. mechanism views: focused TF-target networks and locus/coverage views when the required inputs exist
+```
+
+完成审计后，为 direct 和 extended eRegulon layer 各生成标准 eRegulon 图和 source data。安装器提供 `plot_scenicplus_publication_outputs.py`，会写出 vector PDFs 和对应 source tables：
 
 ```text
 1. eRegulon AUC heatmap across cell states or labels

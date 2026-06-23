@@ -20,3 +20,5 @@ reinstall_after_final_patch_*.log
 
 # Bundled source archives are distributed in the release tarball, not tracked in git.
 vendor/
+.vendor/
+archives/vendor.tar.gz

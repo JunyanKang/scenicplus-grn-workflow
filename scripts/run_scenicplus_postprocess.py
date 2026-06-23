@@ -18,7 +18,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--layer", choices=["direct", "extended", "all"], default="all")
-    parser.add_argument("--task", choices=["stats", "figures", "all"], default="all")
+    parser.add_argument("--task", choices=["audit", "stats", "figures", "all"], default="all")
     parser.add_argument("--params", default=None, help="Default: $PROJECT_DIR/inputs/postprocess_params.tsv")
     return parser.parse_args()
 
@@ -51,6 +51,16 @@ def main() -> None:
     if not params_path.is_absolute():
         params_path = (PROJECT / params_path).resolve()
     params = read_params(params_path)
+    if args.task in {"audit", "all"}:
+        run_logged(
+            [
+                sys.executable,
+                str(SCRIPT_DIR / "audit_scenicplus_output_tiers.py"),
+            ],
+            "audit_scenicplus_output_tiers.log",
+        )
+        if args.task == "audit":
+            return
     layers = ["direct", "extended"] if args.layer == "all" else [args.layer]
     for layer in layers:
         if args.task in {"stats", "all"}:

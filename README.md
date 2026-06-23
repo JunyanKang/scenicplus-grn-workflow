@@ -16,18 +16,19 @@ Environment recipes and pinned Python layer:
   pip-constraints.txt                Required by the pinned pip supplement.
 
 Offline/restricted-network source archives:
-  vendor/github/                     Required for robust installation when GitHub is slow or blocked.
-                                      Also used by default AutoZyme installation.
-  vendor/mallet/                     Bundled MALLET 2.0.8 archive used by the default MALLET installation.
+  archives/vendor.tar.gz             Required in release archives for robust installation when GitHub is slow or blocked.
+                                      install.sh expands it to hidden runtime cache .vendor/.
+  .vendor/github/                    Runtime-expanded pinned source archives used after GitHub retries fail.
+  .vendor/mallet/                    Runtime-expanded MALLET 2.0.8 archive used by the default MALLET installation.
 
 Installed workflow assets:
   initialize_scenicplus_project.sh   User-facing one-step initializer after installation.
                                       Checks the environment, updates scenicplus_project.env, then initializes the project runtime files.
-  scripts/                           Required for the step-by-step workflow after installation.
+  scripts/                           Required executable workflow entry points after installation.
                                       Installed to $CONDA_PREFIX/share/scenicplus-grn/scripts/.
                                       Includes project parameter setup, raw-data sample-sheet generation,
                                       pycisTopic, cisTarget DB, SCENIC+ config, Snakemake and postprocessing wrappers.
-  modules/                           Required helper modules used by workflow scripts.
+  modules/                           Required internal helper modules imported by scripts; not user-facing commands.
                                       Installed to $CONDA_PREFIX/share/scenicplus-grn/modules/.
   scenicplus_config_template.yaml     Required Snakemake config template used by workflow generators.
 
@@ -81,7 +82,7 @@ and continue from there. This keeps the reusable installer next to the conda ins
 6. Bootstraps mamba into conda base if it is not already available.
 7. Creates or updates a dedicated conda environment named scenicplus-grn.
 8. Installs the conda/mamba-resolved Python, CLI, genomics, and R base layer.
-9. Installs a small pinned pip supplement plus the pinned SCENIC+/pycisTopic/pycistarget source layer. Each GitHub source is tried 3 times, then installed from the bundled `vendor/github` archive if GitHub is unstable.
+9. Expands `archives/vendor.tar.gz` to `.vendor/` when needed, then installs a small pinned pip supplement plus the pinned SCENIC+/pycisTopic/pycistarget source layer. Each GitHub source is tried 3 times, then installed from the bundled `.vendor/github` archive if GitHub is unstable.
 10. Installs MALLET 2.0.8 by default for the pycisTopic MALLET LDA backend, using a Python wrapper around the Java classes and a real `import-file` smoke test.
 11. Installs the R/hdWGCNA layer required for the metacell workflow, using the bundled pinned source archive when GitHub is unavailable.
 12. Runs check_environment.sh.
@@ -342,9 +343,10 @@ versions. `locks/environment-linux-64.solved-lock.yml` records the full dry-run
 solve, including transitive dependency build strings, for auditing and exact
 troubleshooting. Pip is used only for a small pinned supplement and exact GitHub
 source commits. The SCENIC+/pycisTopic/pycistarget source commits remain
-identical across platforms. The installer also includes exact source archives
-under `vendor/github` so that GitHub failures on restricted networks do not
-block installation. For local bundled-source installation, the installer explicitly passes
+identical across platforms. Release archives also include exact source archives
+as `archives/vendor.tar.gz`; `install.sh` expands this archive to `.vendor/`
+before installation so that GitHub failures on restricted networks do not block
+installation. For local bundled-source installation, the installer explicitly passes
 the pinned package versions to setuptools-scm, so GitHub archive tarballs do not
 need `.git` metadata to build reproducibly. See `VERSION_LOCK.md` for the full
 readable version summary.
@@ -426,17 +428,18 @@ AutoZyme may print version-scope warnings when a patch was lifted against a
 nearby upstream version; these warnings are logged and do not change package
 versions.
 
-Bundled GitHub source archives used after GitHub retries fail:
+Bundled GitHub source archives used after GitHub retries fail are stored inside
+`archives/vendor.tar.gz` and expanded at runtime to:
 
 ```text
-vendor/github/pycisTopic-219225df56b32738d82cd14532b187a1483de04f.tar.gz
-vendor/github/pycistarget-5aa517604e4842539a7531c16905825dc7cb80fb.tar.gz
-vendor/github/scenicplus-e82b82f14b76618b850dfe442efc2421bb34f3b4.tar.gz
-vendor/github/create_cisTarget_databases-304d5dc1b15e5c923908a50a1ec291c3faaccf9c.tar.gz
-vendor/github/cluster-buster-5911cd6201b767a43316ce613afc6c9255dc3511.tar.gz
-vendor/github/LoomXpy-61995ff10940968eac2cee8fe48300ab477a15d0.tar.gz
-vendor/github/hdWGCNA-afa09abb890f5be087b63e510a7346e8e1952ecc.tar.gz
-vendor/github/SHA256SUMS
+.vendor/github/pycisTopic-219225df56b32738d82cd14532b187a1483de04f.tar.gz
+.vendor/github/pycistarget-5aa517604e4842539a7531c16905825dc7cb80fb.tar.gz
+.vendor/github/scenicplus-e82b82f14b76618b850dfe442efc2421bb34f3b4.tar.gz
+.vendor/github/create_cisTarget_databases-304d5dc1b15e5c923908a50a1ec291c3faaccf9c.tar.gz
+.vendor/github/cluster-buster-5911cd6201b767a43316ce613afc6c9255dc3511.tar.gz
+.vendor/github/LoomXpy-61995ff10940968eac2cee8fe48300ab477a15d0.tar.gz
+.vendor/github/hdWGCNA-afa09abb890f5be087b63e510a7346e8e1952ecc.tar.gz
+.vendor/github/SHA256SUMS
 ```
 
 Bundled archives are checksum-validated before use. If an uploaded archive is

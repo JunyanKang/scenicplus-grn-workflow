@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.2 - 2026-06-23
+
+Normalizes the installer package layout and adds science-layered output auditing.
+
+Highlights:
+
+- Replaces root-level uncompressed `vendor/` distribution with `archives/vendor.tar.gz`.
+- Expands bundled archives at runtime to hidden `.vendor/` cache so restricted-network installs still have local GitHub and MALLET fallbacks.
+- Clarifies the boundary between user-facing `scripts/` and internal `modules/`.
+- Adds `audit_scenicplus_output_tiers.py` and wires it into `run_scenicplus_postprocess.py --task audit`.
+- Reorganizes SCENIC+ output guidance by scientific evidence layer: QC, chromatin topics, region sets/DARs, motif/cisTarget, eRegulon activity, condition effects and mechanism views.
+
 ## 0.1.1 - 2026-06-23
 
 Adds resumable partial custom cisTarget database construction for large projects.

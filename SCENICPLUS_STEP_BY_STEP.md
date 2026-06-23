@@ -669,7 +669,32 @@ Report `delta_mean_auc` and FDR only when there are enough independent samples. 
 
 ## 12. SCENIC+ Result Figures
 
-A complete SCENIC+ analysis should not stop at tables. Generate a compact, polished figure set for each direct and extended eRegulon layer. The installer provides `plot_scenicplus_publication_outputs.py`, which writes vector PDFs and source data tables for:
+A complete SCENIC+ analysis should not stop at tables, but the figures should be organized by scientific evidence layer rather than by plotting convenience. First audit which evidence layers are ready:
+
+```bash
+python $SCENICPLUS_HOME/scripts/run_scenicplus_postprocess.py --task audit
+```
+
+The audit writes:
+
+```text
+results/scenicplus_output_tiers/scenicplus_output_tier_audit.tsv
+results/scenicplus_output_tiers/scenicplus_output_tier_audit.pdf
+```
+
+Scientific output tiers:
+
+```text
+0. input/QC confidence: active RNA/ATAC cells, metadata, fragments, doublet and ATAC QC
+1. chromatin topics: major accessibility states and topic model quality
+2. region sets and DARs: topic-region programs and differential accessible regions
+3. motif/cisTarget evidence: project-specific motif enrichment database and motif2TF mapping
+4. eRegulon activity: TF-region-gene eRegulons and cell-state activity patterns
+5. condition effects: sample-level differential eRegulon activity across conditions
+6. mechanism views: focused TF-target networks and locus/coverage views when the required inputs exist
+```
+
+After the audit, generate the standard eRegulon figure set for each direct and extended eRegulon layer. The installer provides `plot_scenicplus_publication_outputs.py`, which writes vector PDFs and source data tables for:
 
 ```text
 1. eRegulon AUC heatmap across cell states or labels

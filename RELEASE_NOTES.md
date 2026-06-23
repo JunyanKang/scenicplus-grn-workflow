@@ -1,6 +1,6 @@
 # Release Notes
 
-## scenicplus-grn-installer v0.1.1
+## scenicplus-grn-installer v0.1.2
 
 This release packages a reproducible SCENIC+/GRN conda installer and a strict matched snRNA+snATAC workflow for annotated scMultiome projects.
 
@@ -23,6 +23,8 @@ Main deliverables:
 - English and Chinese documentation.
 - Automatic resource planning for CPU/load/memory-sensitive steps.
 - Resumable partial custom cisTarget database construction for large region-by-motif matrices, using the official partial, combine and scores-to-rankings scripts from `create_cisTarget_databases`.
+- Release-package cleanup: offline sources are distributed as `archives/vendor.tar.gz` and expanded at runtime to hidden `.vendor/`.
+- Scientific output-tier audit: postprocessing now separates QC, chromatin topics, region sets/DARs, motif/cisTarget, eRegulon activity, condition effects and mechanism-view readiness.
 
 The installer is intended to be unpacked anywhere, copied under a conda-style root when requested, and run with:
 
