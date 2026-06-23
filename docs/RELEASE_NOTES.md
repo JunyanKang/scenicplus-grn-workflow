@@ -1,6 +1,6 @@
 # Release Notes
 
-## scenicplus-grn-installer v0.1.3
+## scenicplus-grn-installer v0.1.4
 
 This release packages a reproducible SCENIC+/GRN conda installer and a strict matched snRNA+snATAC workflow for annotated scMultiome projects.
 
@@ -26,6 +26,9 @@ Main deliverables:
 - Release-package cleanup: offline sources are distributed as `archives/vendor.tar.gz` and expanded at runtime to hidden `.vendor/`.
 - Scientific output-tier audit: postprocessing now separates QC, chromatin topics, region sets/DARs, motif/cisTarget, eRegulon activity, condition effects and mechanism-view readiness.
 - Cleaner installer root layout: helper entry points live in `bin/`, environment recipes and locks in `config/`, and long workflow/version documents in `docs/`.
+- Hardened environment checks: writable numba/matplotlib cache directories are set during checks to prevent copied-environment `scanpy` cache failures.
+- macOS arm64 recipe now installs conda-provided `samtools`/`htslib`; Linux x86_64 recipe explicitly installs `bzip2`.
+- Custom cisTarget resource planning now defaults to more realistic `cbust` worker memory and documents sequential partial execution as the safe default.
 
 The installer is intended to be unpacked anywhere, copied under a conda-style root when requested, and run with:
 

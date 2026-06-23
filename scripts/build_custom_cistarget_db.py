@@ -117,10 +117,10 @@ def resolve_n_cpu(params: dict[str, str]) -> tuple[int, dict[str, str]]:
     else:
         memory_budget_gb = max(1.0, min(float(max_memory_raw), available_gb))
         memory_source = "user_configured_capped_by_available"
-    min_free_gb = as_float(params, "min_free_memory_gb", 8.0)
+    min_free_gb = as_float(params, "min_free_memory_gb", max(4.0, total_gb * 0.10))
     # Cluster-Buster workers are CPU-bound and usually modest in memory; the
     # full cisTarget score/ranking matrices remain the dominant memory cost.
-    memory_per_worker_gb = as_float(params, "memory_gb_per_worker", 3.0)
+    memory_per_worker_gb = as_float(params, "memory_gb_per_worker", 1.0)
     max_workers_raw = str(params.get("max_workers", "")).strip()
     max_workers = int(max_workers_raw) if max_workers_raw and max_workers_raw.lower() != "auto" else cpu_count
     max_cpu_load_fraction = as_float(params, "max_cpu_load_fraction", 0.80)

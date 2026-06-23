@@ -522,6 +522,12 @@ regions-vs-motifs rankings database with the official conversion script. The
 resource plan records `use_partial`, `partial_n_parts` and the estimated full
 float32 score matrix size.
 
+Partial jobs are run sequentially by default. This is intentional: each
+official partial run still initializes a large region-by-motif score structure,
+so launching multiple partials in parallel can duplicate memory pressure. To use
+spare CPU safely, keep one active partial and let `n_cpu=auto` increase the
+`cbust` worker count within that partial.
+
 Expected:
 
 ```text

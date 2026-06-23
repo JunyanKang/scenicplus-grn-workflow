@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.4 - 2026-06-23
+
+Hardens environment checks and resource-aware custom cisTarget execution.
+
+Highlights:
+
+- Sets writable `NUMBA_CACHE_DIR` and `MPLCONFIGDIR` during environment checks to avoid `scanpy`/numba cache failures on copied or restricted environments.
+- Adds conda-provided `samtools`/`htslib` to the macOS arm64 recipe so `samtools`, `tabix` and `bgzip` resolve from the SCENIC+ environment.
+- Adds explicit `bzip2` to the Linux x86_64 recipe for CentOS7/glibc 2.17 installs.
+- Simplifies README files by keeping project workflow commands in the step-by-step guides.
+- Updates custom cisTarget auto resource planning to favor more workers inside one active partial instead of parallel partial jobs that duplicate region-by-motif memory pressure.
+
 ## 0.1.3 - 2026-06-23
 
 Normalizes the installer root layout.

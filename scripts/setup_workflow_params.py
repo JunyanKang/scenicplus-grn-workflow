@@ -233,9 +233,9 @@ def defaults(env: dict[str, str]) -> dict[str, tuple[Path, dict[str, str]]]:
             INPUTS / "cistarget_db_params.tsv",
             {
                 "n_cpu": "auto",
-                "min_free_memory_gb": "8",
-                "memory_gb_per_worker": "3",
-                "max_workers": n_cpu,
+                "min_free_memory_gb": "auto",
+                "memory_gb_per_worker": "1",
+                "max_workers": "auto",
                 "max_cpu_load_fraction": "0.80",
                 "use_partial": "auto",
                 "partial_n_parts": "auto",

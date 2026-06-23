@@ -265,55 +265,11 @@ The installer refuses to install into `base` unless you explicitly allow it:
 ALLOW_BASE=1 MODE=active bash install.sh
 ```
 
-## After Installation
+## Workflow Guide
 
-Enter the environment and project parameters in the terminal:
-
-```bash
-CONDA_ROOT=/path/to/conda
-ENV_NAME=scenicplus-grn
-PROJECT_DIR=/path/to/grn_project/scenicplus_analysis
-ORGANISM=mouse
-AUTOZYME=on
-ENSEMBL_RELEASE=115
-ANNOTATED_OBJECT=/path/to/active_annotated_multiome_object.rds
-CELL_LABEL_COLUMN=cell_annotation
-ATAC_INPUT_LAYOUT=split_ge_arc
-ATAC_DATA_ROOT=/path/to/atac_input_root
-```
-
-`PROJECT_DIR` should be the dedicated SCENIC+ analysis root, not a larger study
-repository unless all workflow-created `inputs/`, `work/`, `resources/`, `logs/`
-and `results/` folders are intended to live there.
-
-Run the one-step initializer. It checks the environment first, updates
-`$PROJECT_DIR/scenicplus_project.env`, and initializes the project runtime files:
-
-```bash
-env \
-  CONDA_ROOT="$CONDA_ROOT" \
-  ENV_NAME="$ENV_NAME" \
-  PROJECT_DIR="$PROJECT_DIR" \
-  ORGANISM="$ORGANISM" \
-  AUTOZYME="$AUTOZYME" \
-  ENSEMBL_RELEASE="$ENSEMBL_RELEASE" \
-  ANNOTATED_OBJECT="$ANNOTATED_OBJECT" \
-  CELL_LABEL_COLUMN="$CELL_LABEL_COLUMN" \
-  ATAC_INPUT_LAYOUT="$ATAC_INPUT_LAYOUT" \
-  ATAC_DATA_ROOT="$ATAC_DATA_ROOT" \
-  bash "$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn/bin/initialize_scenicplus_project.sh"
-```
-
-After the initializer reports `PROJECT INITIALIZATION OK`, load the project
-runtime variables:
-
-```bash
-source "$PROJECT_DIR/project_env.sh"
-```
-
-The project settings file is written to `$PROJECT_DIR/scenicplus_project.env`.
-Workflow scripts detect available memory, current load and CPU count at launch
-time to choose conservative parallel worker counts.
+Project initialization and analysis commands are kept in
+`docs/SCENICPLUS_STEP_BY_STEP.md` so the installer README stays focused on
+installation, platform support and package contents.
 
 Expected core versions from the current recipe:
 

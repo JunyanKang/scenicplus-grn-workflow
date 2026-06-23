@@ -7,6 +7,11 @@ CONFIG_FILE=""
 SKIP_R=0
 SKIP_WORKFLOW_ASSETS=0
 
+CACHE_ROOT="${SCENICPLUS_CHECK_CACHE_ROOT:-${TMPDIR:-/tmp}/scenicplus-grn-check-${ENV_NAME}}"
+mkdir -p "$CACHE_ROOT/numba" "$CACHE_ROOT/matplotlib"
+export NUMBA_CACHE_DIR="${NUMBA_CACHE_DIR:-$CACHE_ROOT/numba}"
+export MPLCONFIGDIR="${MPLCONFIGDIR:-$CACHE_ROOT/matplotlib}"
+
 usage() {
   cat <<'EOF'
 Usage:

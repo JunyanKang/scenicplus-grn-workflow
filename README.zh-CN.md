@@ -257,49 +257,10 @@ MODE=active bash install.sh
 ALLOW_BASE=1 MODE=active bash install.sh
 ```
 
-## 安装后
+## Workflow Guide
 
-在终端中输入环境和项目参数：
-
-```bash
-CONDA_ROOT=/path/to/conda
-ENV_NAME=scenicplus-grn
-PROJECT_DIR=/path/to/grn_project/scenicplus_analysis
-ORGANISM=mouse
-AUTOZYME=on
-ENSEMBL_RELEASE=115
-ANNOTATED_OBJECT=/path/to/active_annotated_multiome_object.rds
-CELL_LABEL_COLUMN=cell_annotation
-ATAC_INPUT_LAYOUT=split_ge_arc
-ATAC_DATA_ROOT=/path/to/atac_input_root
-```
-
-`PROJECT_DIR` 应该是专门用于 SCENIC+ 分析的根目录，而不是更大的研究项目目录，除非你确实希望 workflow 产生的 `inputs/`、`work/`、`resources/`、`logs/` 和 `results/` 都放在那里。
-
-运行一步式初始化。它会先检查环境，更新 `$PROJECT_DIR/scenicplus_project.env`，并初始化项目运行文件：
-
-```bash
-env \
-  CONDA_ROOT="$CONDA_ROOT" \
-  ENV_NAME="$ENV_NAME" \
-  PROJECT_DIR="$PROJECT_DIR" \
-  ORGANISM="$ORGANISM" \
-  AUTOZYME="$AUTOZYME" \
-  ENSEMBL_RELEASE="$ENSEMBL_RELEASE" \
-  ANNOTATED_OBJECT="$ANNOTATED_OBJECT" \
-  CELL_LABEL_COLUMN="$CELL_LABEL_COLUMN" \
-  ATAC_INPUT_LAYOUT="$ATAC_INPUT_LAYOUT" \
-  ATAC_DATA_ROOT="$ATAC_DATA_ROOT" \
-  bash "$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn/bin/initialize_scenicplus_project.sh"
-```
-
-出现 `PROJECT INITIALIZATION OK` 后，加载项目运行变量：
-
-```bash
-source "$PROJECT_DIR/project_env.sh"
-```
-
-项目设置文件写在 `$PROJECT_DIR/scenicplus_project.env`。workflow 脚本会在启动时自动检测可用内存、当前负载和 CPU 数量，并选择保守的并行 worker 数。
+项目初始化和分析命令统一放在 `docs/SCENICPLUS_STEP_BY_STEP.zh-CN.md`，
+README 只保留安装、平台支持和安装内容说明。
 
 当前 recipe 的核心版本预期：
 
