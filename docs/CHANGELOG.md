@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.5 - 2026-06-23
+
+Adds long-running custom cisTarget heartbeat logging.
+
+Highlights:
+
+- `build_custom_cistarget_db.py` now emits periodic `HEARTBEAT` records while official `create_cistarget_motif_databases.py` partial, combine or rankings-conversion commands are still running.
+- Heartbeats report elapsed time, main process PID, child process summary and watched output-file status without changing the official cisTarget computation path.
+- Adds `heartbeat_seconds` to `inputs/cistarget_db_params.tsv`; the default interval is 600 seconds to keep server logs quiet while still proving that long scans are alive.
+- Environment self-checks now fail if core workflow tools such as `samtools`, `tabix` or `bgzip` resolve outside the active conda environment.
+- Updates English and Chinese step-by-step guides to explain why Cluster-Buster scans can remain silent until workers return.
+
 ## 0.1.4 - 2026-06-23
 
 Hardens environment checks and resource-aware custom cisTarget execution.

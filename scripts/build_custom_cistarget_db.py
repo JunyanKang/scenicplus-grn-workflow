@@ -96,6 +96,13 @@ def as_float(params: dict[str, str], key: str, default: float) -> float:
     return float(value)
 
 
+def as_int(params: dict[str, str], key: str, default: int) -> int:
+    value = str(params.get(key, "")).strip()
+    if value == "" or value.lower() == "auto":
+        return default
+    return int(float(value))
+
+
 def as_bool_auto(params: dict[str, str], key: str, default: str = "auto") -> str:
     value = str(params.get(key, default)).strip().lower()
     if value in {"1", "true", "yes", "on"}:
@@ -243,9 +250,71 @@ def check_motifs(motif_dir: Path, motifs_txt: Path) -> int:
     return len(motifs)
 
 
-def run_checked(cmd: list[str]) -> None:
+def child_process_summary(pid: int) -> str:
+    try:
+        import psutil
+
+        parent = psutil.Process(pid)
+        children = parent.children(recursive=True)
+        running = [p for p in children if p.is_running()]
+        names: dict[str, int] = {}
+        rss = 0
+        for proc in running:
+            try:
+                names[proc.name()] = names.get(proc.name(), 0) + 1
+                rss += int(proc.memory_info().rss)
+            except Exception:
+                continue
+        name_text = ",".join(f"{name}:{count}" for name, count in sorted(names.items())) or "none"
+        return f"children={len(running)} child_names={name_text} child_rss_gb={rss / (1024 ** 3):.2f}"
+    except Exception:
+        return "children=unknown"
+
+
+def watched_path_summary(paths: list[Path]) -> str:
+    if not paths:
+        return ""
+    parts = []
+    for path in paths:
+        if path.exists():
+            parts.append(f"{path.name}=present:{path.stat().st_size}")
+        else:
+            parts.append(f"{path.name}=missing")
+    return " watch=" + ",".join(parts)
+
+
+def run_checked(
+    cmd: list[str],
+    heartbeat_seconds: int = 0,
+    heartbeat_label: str = "",
+    watch_paths: list[Path] | None = None,
+) -> None:
     print("RUN " + " ".join(map(str, cmd)), flush=True)
-    subprocess.run(cmd, check=True)
+    if heartbeat_seconds <= 0:
+        subprocess.run(cmd, check=True)
+        return
+    started = time.monotonic()
+    last_heartbeat = started
+    proc = subprocess.Popen(cmd)
+    while True:
+        return_code = proc.poll()
+        if return_code is not None:
+            if return_code != 0:
+                raise subprocess.CalledProcessError(return_code, cmd)
+            return
+        now = time.monotonic()
+        if now - last_heartbeat >= heartbeat_seconds:
+            elapsed = (now - started) / 60.0
+            label = heartbeat_label or Path(str(cmd[0])).name
+            print(
+                "HEARTBEAT "
+                f"{label} elapsed_min={elapsed:.1f} pid={proc.pid} "
+                f"{child_process_summary(proc.pid)}"
+                f"{watched_path_summary(watch_paths or [])}",
+                flush=True,
+            )
+            last_heartbeat = now
+        time.sleep(min(10, max(1, heartbeat_seconds // 6)))
 
 
 def final_outputs(out_prefix: Path) -> tuple[Path, Path, Path]:
@@ -293,6 +362,8 @@ def main() -> None:
     n_regions = write_named_consensus(consensus_bed, allowed_chroms, named_bed)
     n_motifs = check_motifs(motif_dir, motifs_txt)
     use_partial, n_parts, partial_report = resolve_partial_plan(params, resource_report, n_regions, n_motifs)
+    heartbeat_seconds = max(0, as_int(params, "heartbeat_seconds", 600))
+    resource_report["heartbeat_seconds"] = str(heartbeat_seconds)
     resource_report.update(partial_report)
     fasta.parent.mkdir(parents=True, exist_ok=True)
     run_checked([bedtools, "getfasta", "-fi", str(genome), "-bed", str(named_bed), "-name", "-fo", str(fasta)])
@@ -342,7 +413,12 @@ def main() -> None:
             if partial_file.exists() and partial_file.stat().st_size > 0:
                 print(f"SKIP existing partial {part}/{n_parts}: {partial_file}")
                 continue
-            run_checked(common_cmd + ["-o", str(partial_prefix), "--partial", str(part), str(n_parts)])
+            run_checked(
+                common_cmd + ["-o", str(partial_prefix), "--partial", str(part), str(n_parts)],
+                heartbeat_seconds=heartbeat_seconds,
+                heartbeat_label=f"custom_cistarget_partial_{part}_of_{n_parts}",
+                watch_paths=[partial_file],
+            )
 
         combine_script = Path(conda_prefix) / "opt" / "create_cisTarget_databases" / "combine_partial_motifs_or_tracks_vs_regions_or_genes_scores_cistarget_dbs.py"
         convert_script = Path(conda_prefix) / "opt" / "create_cisTarget_databases" / "convert_motifs_or_tracks_vs_regions_or_genes_scores_to_rankings_cistarget_dbs.py"
@@ -350,13 +426,28 @@ def main() -> None:
             if not script.exists():
                 raise FileNotFoundError(script)
         if not scores.exists() or scores.stat().st_size == 0 or not motif_scores.exists() or motif_scores.stat().st_size == 0:
-            run_checked([python_bin, str(combine_script), "-i", str(partial_dir), "-o", str(out_prefix.parent)])
+            run_checked(
+                [python_bin, str(combine_script), "-i", str(partial_dir), "-o", str(out_prefix.parent)],
+                heartbeat_seconds=heartbeat_seconds,
+                heartbeat_label="custom_cistarget_combine_partial_scores",
+                watch_paths=[motif_scores, scores],
+            )
         if not rankings.exists() or rankings.stat().st_size == 0:
             if not motif_scores.exists() or motif_scores.stat().st_size == 0:
                 raise FileNotFoundError(motif_scores)
-            run_checked([python_bin, str(convert_script), "-i", str(motif_scores), "-s", str(int(params["seed"]))])
+            run_checked(
+                [python_bin, str(convert_script), "-i", str(motif_scores), "-s", str(int(params["seed"]))],
+                heartbeat_seconds=heartbeat_seconds,
+                heartbeat_label="custom_cistarget_scores_to_rankings",
+                watch_paths=[rankings],
+            )
     else:
-        run_checked(common_cmd + ["-o", str(out_prefix)])
+        run_checked(
+            common_cmd + ["-o", str(out_prefix)],
+            heartbeat_seconds=heartbeat_seconds,
+            heartbeat_label="custom_cistarget_full_database",
+            watch_paths=[motif_scores, rankings, scores],
+        )
 
     for path in [rankings, scores]:
         if not path.exists() or path.stat().st_size == 0:

@@ -241,6 +241,7 @@ def defaults(env: dict[str, str]) -> dict[str, tuple[Path, dict[str, str]]]:
                 "partial_n_parts": "auto",
                 "target_partial_matrix_gb": "3",
                 "max_partial_parts": "64",
+                "heartbeat_seconds": "600",
                 "seed": "555",
             },
         ),

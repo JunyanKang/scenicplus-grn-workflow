@@ -71,6 +71,19 @@ REQUIRED_COMMANDS = [
     "bgzip",
 ]
 
+ENV_SCOPED_COMMANDS = {
+    "python",
+    "scenicplus",
+    "snakemake",
+    "macs2",
+    "cbust",
+    "bedtools",
+    "samtools",
+    "tabix",
+    "bgzip",
+    "mallet",
+}
+
 REQUIRED_IMPORTS = [
     "yaml",
     "pandas",
@@ -191,6 +204,9 @@ def main() -> None:
         commands = list(REQUIRED_COMMANDS)
         if os.environ.get("SCENICPLUS_REQUIRE_MALLET", "1").strip().lower() not in {"0", "false", "no", "off"}:
             commands.append("mallet")
+        env_bin = None
+        if conda_prefix:
+            env_bin = str(Path(conda_prefix).resolve() / "bin")
         for command in commands:
             path = shutil.which(command)
             if path:
@@ -198,6 +214,14 @@ def main() -> None:
                 if command in {"snakemake", "macs2"}:
                     detail += f" ({run_version([command, '--version'])})"
                 ok(f"command {command}", detail)
+                if env_bin and command in ENV_SCOPED_COMMANDS:
+                    resolved = str(Path(path).resolve())
+                    if not resolved.startswith(env_bin + os.sep):
+                        fail(
+                            f"command {command} env scope",
+                            f"resolved outside current conda env: {resolved}",
+                            failures,
+                        )
                 if command == "mallet":
                     check_mallet_import(path, failures)
             else:

@@ -522,6 +522,12 @@ regions-vs-motifs rankings database with the official conversion script. The
 resource plan records `use_partial`, `partial_n_parts` and the estimated full
 float32 score matrix size.
 
+Long Cluster-Buster scans may not print motif-level progress until one or more
+workers return. The wrapper writes a lightweight heartbeat while the official
+script is still running. The interval is controlled by `heartbeat_seconds` in
+`inputs/cistarget_db_params.tsv` and defaults to 600 seconds. Set it higher for
+quiet server logs or lower when actively debugging.
+
 Partial jobs are run sequentially by default. This is intentional: each
 official partial run still initializes a large region-by-motif score structure,
 so launching multiple partials in parallel can duplicate memory pressure. To use
