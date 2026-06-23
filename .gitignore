@@ -1,0 +1,22 @@
+# Runtime logs and local checks
+logs/
+*.log
+nohup_*.out
+*.pid
+
+# Python/R caches
+__pycache__/
+*.py[cod]
+.Rhistory
+.RData
+
+# Local temporary files
+.DS_Store
+tmp/
+*.tmp
+
+# Local installation state
+reinstall_after_final_patch_*.log
+
+# Bundled source archives are distributed in the release tarball, not tracked in git.
+vendor/

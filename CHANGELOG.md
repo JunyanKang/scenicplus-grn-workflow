@@ -1,0 +1,30 @@
+# Changelog
+
+## 0.1.1 - 2026-06-23
+
+Adds resumable partial custom cisTarget database construction for large projects.
+
+Highlights:
+
+- Uses official `create_cisTarget_databases` partial scoring, combine, and scores-to-rankings conversion scripts.
+- Automatically enables partial mode for large region-by-motif matrices.
+- Skips existing non-empty partial score files on rerun, so interrupted database builds can resume.
+- Lowers the Cluster-Buster worker memory estimate while preserving realtime CPU/load and available-memory checks.
+
+## 0.1.0 - 2026-06-23
+
+Initial version-controlled release of the reusable `scenicplus-grn-installer`.
+
+Highlights:
+
+- Provides macOS arm64 and Linux x86_64 conda recipes for a dedicated SCENIC+/GRN environment.
+- Bundles pinned GitHub source archives for SCENIC+, pycisTopic, pycistarget, create_cisTarget_databases, Cluster-Buster, hdWGCNA and related dependencies.
+- Adds MALLET support for large pycisTopic topic modeling.
+- Adds AutoZyme as a no-dependency overlay that does not perturb pinned package versions.
+- Installs workflow scripts under `$CONDA_PREFIX/share/scenicplus-grn`.
+- Provides matched snRNA+snATAC step-by-step workflow scripts for annotated scMultiome objects plus original ATAC fragments and peaks.
+- Adds Chinese documentation files:
+  - `README.zh-CN.md`
+  - `SCENICPLUS_STEP_BY_STEP.zh-CN.md`
+- Adds automatic per-step resource detection for pycisTopic and custom cisTarget database construction.
+- Adds project-local `MPLCONFIGDIR` and `NUMBA_CACHE_DIR` handling to avoid scanpy/numba cache failures on servers or restricted home directories.

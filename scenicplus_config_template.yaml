@@ -1,0 +1,61 @@
+input_data:
+  cisTopic_obj_fname: "{PROJECT_DIR}/inputs/cistopic_obj.pkl"
+  GEX_anndata_fname: "{PROJECT_DIR}/inputs/gex.h5ad"
+  region_set_folder: "{PROJECT_DIR}/inputs/region_sets"
+  ctx_db_fname: "{PROJECT_DIR}/inputs/cistarget_db/custom.regions_vs_motifs.rankings.feather"
+  dem_db_fname: "{PROJECT_DIR}/inputs/cistarget_db/custom.regions_vs_motifs.scores.feather"
+  path_to_motif_annotations: "{PROJECT_DIR}/inputs/cistarget_db/motif_annotations.tbl"
+output_data:
+  combined_GEX_ACC_mudata: "{PROJECT_DIR}/work/scenicplus/ACC_GEX.h5mu"
+  dem_result_fname: "{PROJECT_DIR}/work/scenicplus/dem_results.hdf5"
+  ctx_result_fname: "{PROJECT_DIR}/work/scenicplus/ctx_results.hdf5"
+  output_fname_dem_html: "{PROJECT_DIR}/work/scenicplus/dem_results.html"
+  output_fname_ctx_html: "{PROJECT_DIR}/work/scenicplus/ctx_results.html"
+  cistromes_direct: "{PROJECT_DIR}/work/scenicplus/cistromes_direct.h5ad"
+  cistromes_extended: "{PROJECT_DIR}/work/scenicplus/cistromes_extended.h5ad"
+  tf_names: "{PROJECT_DIR}/work/scenicplus/tf_names.txt"
+  genome_annotation: "{PROJECT_DIR}/work/scenicplus/genome_annotation.tsv"
+  chromsizes: "{PROJECT_DIR}/work/scenicplus/chromsizes.tsv"
+  search_space: "{PROJECT_DIR}/work/scenicplus/search_space.tsv"
+  tf_to_gene_adjacencies: "{PROJECT_DIR}/work/scenicplus/tf_to_gene_adj.tsv"
+  region_to_gene_adjacencies: "{PROJECT_DIR}/work/scenicplus/region_to_gene_adj.tsv"
+  eRegulons_direct: "{PROJECT_DIR}/results/scenicplus/eRegulons_direct.tsv"
+  eRegulons_extended: "{PROJECT_DIR}/results/scenicplus/eRegulons_extended.tsv"
+  AUCell_direct: "{PROJECT_DIR}/results/scenicplus/AUCell_direct.h5mu"
+  AUCell_extended: "{PROJECT_DIR}/results/scenicplus/AUCell_extended.h5mu"
+  scplus_mdata: "{PROJECT_DIR}/results/scenicplus/scplus_mdata.h5mu"
+params_general:
+  temp_dir: "{PROJECT_DIR}/tmp"
+  n_cpu: 16
+  seed: 666
+params_data_preparation:
+  bc_transform_func: "\"lambda x: x\""
+  is_multiome: true
+  key_to_group_by: ""
+  nr_cells_per_metacells: 10
+  direct_annotation: "Direct_annot"
+  extended_annotation: "Orthology_annot"
+  search_space_upstream: "1000 150000"
+  search_space_downstream: "1000 150000"
+  search_space_extend_tss: "10 10"
+params_motif_enrichment:
+  fraction_overlap_w_ctx_database: 0.4
+  fraction_overlap_w_dem_database: 0.4
+  dem_balance_number_of_promoters: true
+  dem_promoter_space: 1000
+  ctx_auc_threshold: 0.005
+  ctx_nes_threshold: 3.0
+  ctx_rank_threshold: 0.05
+  dem_max_bg_regions: 500
+  dem_adj_pval_thr: 0.05
+  dem_log2fc_thr: 1.0
+  dem_mean_fg_thr: 0.0
+  dem_motif_hit_thr: 3.0
+  motif_similarity_fdr: 0.001
+  orthologous_identity_threshold: 0.0
+params_inference:
+  tf_to_gene_importance_method: "GBM"
+  region_to_gene_importance_method: "GBM"
+  region_to_gene_correlation_method: "SR"
+  rho_threshold: 0.05
+  min_target_genes: 10
