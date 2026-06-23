@@ -116,7 +116,7 @@ Confirm this is the intended analysis scope:
 
 ```bash
 mkdir -p "$PROJECT_DIR/logs"
-bash "$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn/check_environment.sh" \
+bash "$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn/bin/check_environment.sh" \
   --conda-root "$CONDA_ROOT" \
   --env-name "$ENV_NAME" \
   2>&1 | tee "$PROJECT_DIR/logs/pre_step0_check_environment.log"
@@ -125,7 +125,7 @@ bash "$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn/check_environment.sh" \
 然后运行一步式初始化。它会验证参数值、检查 conda 环境、更新项目设置文件，并初始化项目运行文件：
 
 ```bash
-bash "$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn/initialize_scenicplus_project.sh"
+bash "$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn/bin/initialize_scenicplus_project.sh"
 ```
 
 下游步骤开始前，请再次确认这里的每个参数，尤其是绝对路径、物种、ATAC layout 和对象路径。`scenicplus_project.env` 是后续项目参数的记录来源。

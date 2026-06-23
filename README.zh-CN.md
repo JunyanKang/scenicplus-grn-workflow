@@ -7,13 +7,24 @@
 ```text
 Installer entry points:
   install.sh                         Required. Main installer and bootstrap script.
-  check_environment.sh               Required. Environment and workflow self-check entry point.
-  install_r.R                        Required R/hdWGCNA/Seurat/Signac installation layer for the metacell workflow.
+  README.md                          User-facing installer guide.
+  README.zh-CN.md                    Chinese installer guide.
+  VERSION                            Installer package version.
+
+Installer helper entry points:
+  bin/check_environment.sh           Required. Environment and workflow self-check entry point.
+  bin/initialize_scenicplus_project.sh
+                                      User-facing one-step initializer after installation.
+  bin/install_r.R                    Required R/hdWGCNA/Seurat/Signac installation layer for the metacell workflow.
 
 Environment recipes and pinned Python layer:
-  environment-linux-64.yml           Required on Linux x86_64, compatible with glibc >= 2.17.
-  environment-macos-arm64.yml        Required on Apple Silicon macOS.
-  pip-constraints.txt                Required by the pinned pip supplement.
+  config/environment-linux-64.yml    Required on Linux x86_64, compatible with glibc >= 2.17.
+  config/environment-macos-arm64.yml Required on Apple Silicon macOS.
+  config/pip-constraints.txt         Required by the pinned pip supplement.
+  config/scenicplus_config_template.yaml
+                                      Required Snakemake config template used by workflow generators.
+  config/locks/environment-linux-64.solved-lock.yml
+                                      Linux dry-run conda lock record with build strings for auditing/debugging.
 
 Offline/restricted-network source archives:
   archives/vendor.tar.gz             Required in release archives for robust installation when GitHub is slow or blocked.
@@ -22,27 +33,20 @@ Offline/restricted-network source archives:
   .vendor/mallet/                    运行时解出的 MALLET 2.0.8 archive；默认 MALLET 安装使用。
 
 Installed workflow assets:
-  initialize_scenicplus_project.sh   User-facing one-step initializer after installation.
-                                      Checks the environment, updates scenicplus_project.env, then initializes the project runtime files.
   scripts/                           Required executable workflow entry points after installation.
                                       Installed to $CONDA_PREFIX/share/scenicplus-grn/scripts/.
                                       Includes project parameter setup, raw-data sample-sheet generation,
                                       pycisTopic, cisTarget DB, SCENIC+ config, Snakemake and postprocessing wrappers.
   modules/                           Required internal helper modules imported by scripts; not user-facing commands.
                                       Installed to $CONDA_PREFIX/share/scenicplus-grn/modules/.
-  scenicplus_config_template.yaml     Required Snakemake config template used by workflow generators.
 
 Documentation and audit records:
-  README.md                          User-facing installer guide.
-  README.zh-CN.md                    Chinese installer guide.
-  SCENICPLUS_STEP_BY_STEP.md          Strict matched snRNA+snATAC workflow guide.
-  SCENICPLUS_STEP_BY_STEP.zh-CN.md    Chinese matched snRNA+snATAC workflow guide.
-  VERSION                            Installer package version.
-  CHANGELOG.md                       Release history.
-  RELEASE_NOTES.md                   Current release notes.
-  VERSION_LOCK.md                    Human-readable record of pinned analysis software versions.
-  locks/environment-linux-64.solved-lock.yml
-                                      Linux dry-run conda lock record with build strings for auditing/debugging.
+  docs/SCENICPLUS_STEP_BY_STEP.md    Strict matched snRNA+snATAC workflow guide.
+  docs/SCENICPLUS_STEP_BY_STEP.zh-CN.md
+                                      Chinese matched snRNA+snATAC workflow guide.
+  docs/CHANGELOG.md                  Release history.
+  docs/RELEASE_NOTES.md              Current release notes.
+  docs/VERSION_LOCK.md               Human-readable record of pinned analysis software versions.
 ```
 
 ## 推荐使用方式
@@ -286,7 +290,7 @@ env \
   CELL_LABEL_COLUMN="$CELL_LABEL_COLUMN" \
   ATAC_INPUT_LAYOUT="$ATAC_INPUT_LAYOUT" \
   ATAC_DATA_ROOT="$ATAC_DATA_ROOT" \
-  bash "$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn/initialize_scenicplus_project.sh"
+  bash "$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn/bin/initialize_scenicplus_project.sh"
 ```
 
 出现 `PROJECT INITIALIZATION OK` 后，加载项目运行变量：
@@ -313,15 +317,15 @@ MALLET 2.0.8
 `install.sh` 会自动选择环境文件：
 
 ```text
-macOS arm64      -> environment-macos-arm64.yml
-Linux x86_64     -> environment-linux-64.yml
+macOS arm64      -> config/environment-macos-arm64.yml
+Linux x86_64     -> config/environment-linux-64.yml
 ```
 
 Linux 下，如果没有设置 `CONDA_SUBDIR`，脚本会导出 `CONDA_SUBDIR=linux-64`。这个 recipe 面向常见 Linux x86_64 服务器，以 glibc 2.17 作为最低兼容线；通常也适用于更新 glibc 的 Rocky/Alma/CentOS Stream、Ubuntu 和 Debian。低于 glibc 2.17 的服务器不受支持。Linux ARM/aarch64 需要单独 recipe。
 
 ## 安装内容
 
-安装器版本锁定到本地 macOS 成功 dry run。Linux recipe 是 conda-first：Python、CLI、genomics、SCENIC 相关包和 R base 由 mamba 从 conda-forge/bioconda 解析，并兼容 CentOS7/glibc 2.17。`environment-linux-64.yml` 固定顶层安装版本；`locks/environment-linux-64.solved-lock.yml` 记录完整 dry-run solve，包括传递依赖 build string，用于审计和排错。pip 只用于小型 pinned supplement 和精确 GitHub source commits。SCENIC+/pycisTopic/pycistarget source commits 在不同平台保持一致。release archive 还包含 `archives/vendor.tar.gz`；`install.sh` 会在安装前把它解压为 `.vendor/`，避免受限网络下 GitHub 失败阻断安装。本地 bundled-source 安装时，安装器会显式把 pinned package versions 传给 setuptools-scm，因此 GitHub archive tarball 不需要 `.git` 元数据也能可重复构建。完整版本摘要见 `VERSION_LOCK.md`。
+安装器版本锁定到本地 macOS 成功 dry run。Linux recipe 是 conda-first：Python、CLI、genomics、SCENIC 相关包和 R base 由 mamba 从 conda-forge/bioconda 解析，并兼容 CentOS7/glibc 2.17。`config/environment-linux-64.yml` 固定顶层安装版本；`config/locks/environment-linux-64.solved-lock.yml` 记录完整 dry-run solve，包括传递依赖 build string，用于审计和排错。pip 只用于小型 pinned supplement 和精确 GitHub source commits。SCENIC+/pycisTopic/pycistarget source commits 在不同平台保持一致。release archive 还包含 `archives/vendor.tar.gz`；`install.sh` 会在安装前把它解压为 `.vendor/`，避免受限网络下 GitHub 失败阻断安装。本地 bundled-source 安装时，安装器会显式把 pinned package versions 传给 setuptools-scm，因此 GitHub archive tarball 不需要 `.git` 元数据也能可重复构建。完整版本摘要见 `docs/VERSION_LOCK.md`。
 
 Workflow 脚本和 helper modules 安装在独立 conda 环境中，不安装到全局系统目录。激活后，`$CONDA_PREFIX` 指向该环境，脚本位于：
 
@@ -453,9 +457,9 @@ harmony                      2.0.4 macOS/R 4.5; 2.0.2 Linux/R 4.4
 ggraph                       2.2.2
 ```
 
-其他 pinned pip dependencies 见 `pip-constraints.txt`；安装器会 force-reinstall 该 pip 层，减少后续版本漂移。
+其他 pinned pip dependencies 见 `config/pip-constraints.txt`；安装器会 force-reinstall 该 pip 层，减少后续版本漂移。
 
-`check_environment.sh` 会在加载 hdWGCNA 前设置 `options(enrichR.live = FALSE)`。这避免 Enrichr 网络服务慢、被阻断或不可用时造成误失败。它不会关闭 SCENIC+，只是防止包加载时的网络检查破坏环境验证。
+`bin/check_environment.sh` 会在加载 hdWGCNA 前设置 `options(enrichR.live = FALSE)`。这避免 Enrichr 网络服务慢、被阻断或不可用时造成误失败。它不会关闭 SCENIC+，只是防止包加载时的网络检查破坏环境验证。
 
 ## 排错
 
@@ -492,7 +496,7 @@ AUTOZYME_DISABLED=1 Rscript your_analysis.R
 ```bash
 CONDA_ROOT=/path/to/conda
 ENV_NAME=scenicplus-grn
-bash "$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn/check_environment.sh" \
+bash "$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn/bin/check_environment.sh" \
   --conda-root "$CONDA_ROOT" \
   --env-name "$ENV_NAME"
 ```

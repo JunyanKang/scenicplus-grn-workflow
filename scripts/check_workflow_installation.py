@@ -163,14 +163,20 @@ def main() -> None:
         for rel in [
             "README.md",
             "README.zh-CN.md",
-            "SCENICPLUS_STEP_BY_STEP.md",
-            "SCENICPLUS_STEP_BY_STEP.zh-CN.md",
             "VERSION",
-            "CHANGELOG.md",
-            "RELEASE_NOTES.md",
-            "VERSION_LOCK.md",
-            "scenicplus_config_template.yaml",
-            "locks/environment-linux-64.solved-lock.yml",
+            "bin/check_environment.sh",
+            "bin/initialize_scenicplus_project.sh",
+            "bin/install_r.R",
+            "docs/SCENICPLUS_STEP_BY_STEP.md",
+            "docs/SCENICPLUS_STEP_BY_STEP.zh-CN.md",
+            "docs/CHANGELOG.md",
+            "docs/RELEASE_NOTES.md",
+            "docs/VERSION_LOCK.md",
+            "config/scenicplus_config_template.yaml",
+            "config/environment-linux-64.yml",
+            "config/environment-macos-arm64.yml",
+            "config/pip-constraints.txt",
+            "config/locks/environment-linux-64.solved-lock.yml",
         ]:
             path = home / rel
             ok(rel, str(path)) if path.is_file() and path.stat().st_size > 0 else fail(rel, str(path), failures)

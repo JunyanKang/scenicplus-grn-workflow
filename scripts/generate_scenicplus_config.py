@@ -13,7 +13,7 @@ import yaml
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SHARE_DIR = SCRIPT_DIR.parent
-DEFAULT_TEMPLATE = SHARE_DIR / "scenicplus_config_template.yaml"
+DEFAULT_TEMPLATE = SHARE_DIR / "config" / "scenicplus_config_template.yaml"
 
 
 def parse_args() -> argparse.Namespace:

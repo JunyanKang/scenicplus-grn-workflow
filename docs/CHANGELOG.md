@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.3 - 2026-06-23
+
+Normalizes the installer root layout.
+
+Highlights:
+
+- Keeps the root directory focused on `install.sh`, `README*`, `VERSION` and major functional directories.
+- Moves helper entry points to `bin/`.
+- Moves conda recipes, pip constraints, Snakemake template and locks to `config/`.
+- Moves long workflow/version documents to `docs/`.
+- Updates installer copy logic, workflow asset checks and README/step-by-step paths for the new layout.
+
 ## 0.1.2 - 2026-06-23
 
 Normalizes the installer package layout and adds science-layered output auditing.

@@ -2,6 +2,10 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BIN_DIR="${BIN_DIR:-$SCRIPT_DIR/bin}"
+CONFIG_DIR="${CONFIG_DIR:-$SCRIPT_DIR/config}"
+DOCS_DIR="${DOCS_DIR:-$SCRIPT_DIR/docs}"
+LOCKS_DIR="${LOCKS_DIR:-$CONFIG_DIR/locks}"
 ENV_NAME="${ENV_NAME:-scenicplus-grn}"
 MODE="${MODE:-new}"
 INSTALL_R="${INSTALL_R:-1}"
@@ -241,27 +245,35 @@ path_is_inside() {
 
 copy_distribution_assets() {
   local target_dir="$1"
-  mkdir -p "$target_dir/locks"
+  mkdir -p "$target_dir/bin"
+  mkdir -p "$target_dir/config/locks"
+  mkdir -p "$target_dir/docs"
   mkdir -p "$target_dir/archives"
   cp -f \
-    "$SCRIPT_DIR/install.sh" \
-    "$SCRIPT_DIR/check_environment.sh" \
-    "$SCRIPT_DIR/initialize_scenicplus_project.sh" \
-    "$SCRIPT_DIR/install_r.R" \
-    "$SCRIPT_DIR/pip-constraints.txt" \
     "$SCRIPT_DIR/VERSION" \
-    "$SCRIPT_DIR/VERSION_LOCK.md" \
-    "$SCRIPT_DIR/CHANGELOG.md" \
-    "$SCRIPT_DIR/RELEASE_NOTES.md" \
-    "$SCRIPT_DIR/environment-linux-64.yml" \
-    "$SCRIPT_DIR/environment-macos-arm64.yml" \
     "$SCRIPT_DIR/README.md" \
     "$SCRIPT_DIR/README.zh-CN.md" \
-    "$SCRIPT_DIR/SCENICPLUS_STEP_BY_STEP.md" \
-    "$SCRIPT_DIR/SCENICPLUS_STEP_BY_STEP.zh-CN.md" \
-    "$SCRIPT_DIR/scenicplus_config_template.yaml" \
+    "$SCRIPT_DIR/install.sh" \
     "$target_dir/"
-  cp -f "$SCRIPT_DIR/locks/environment-linux-64.solved-lock.yml" "$target_dir/locks/"
+  cp -f \
+    "$BIN_DIR/check_environment.sh" \
+    "$BIN_DIR/initialize_scenicplus_project.sh" \
+    "$BIN_DIR/install_r.R" \
+    "$target_dir/bin/"
+  cp -f \
+    "$CONFIG_DIR/pip-constraints.txt" \
+    "$CONFIG_DIR/environment-linux-64.yml" \
+    "$CONFIG_DIR/environment-macos-arm64.yml" \
+    "$CONFIG_DIR/scenicplus_config_template.yaml" \
+    "$target_dir/config/"
+  cp -f "$LOCKS_DIR/environment-linux-64.solved-lock.yml" "$target_dir/config/locks/"
+  cp -f \
+    "$DOCS_DIR/VERSION_LOCK.md" \
+    "$DOCS_DIR/CHANGELOG.md" \
+    "$DOCS_DIR/RELEASE_NOTES.md" \
+    "$DOCS_DIR/SCENICPLUS_STEP_BY_STEP.md" \
+    "$DOCS_DIR/SCENICPLUS_STEP_BY_STEP.zh-CN.md" \
+    "$target_dir/docs/"
   if [[ -s "$VENDOR_ARCHIVE" ]]; then
     cp -f "$VENDOR_ARCHIVE" "$target_dir/archives/vendor.tar.gz"
   elif [[ -d "$VENDOR_DIR" ]]; then
@@ -300,10 +312,10 @@ copy_to_conda_share_if_needed() {
   mkdir -p "$CONDA_ROOT/share"
   mkdir -p "$target_dir"
   copy_distribution_assets "$target_dir"
-  cp -f "$SCRIPT_DIR/check_environment.sh" "$CONDA_ROOT/bin/scenicplus-grn-check"
-  cp -f "$SCRIPT_DIR/initialize_scenicplus_project.sh" "$CONDA_ROOT/bin/scenicplus-grn-initialize"
+  cp -f "$BIN_DIR/check_environment.sh" "$CONDA_ROOT/bin/scenicplus-grn-check"
+  cp -f "$BIN_DIR/initialize_scenicplus_project.sh" "$CONDA_ROOT/bin/scenicplus-grn-initialize"
   chmod +x "$CONDA_ROOT/bin/scenicplus-grn-check" "$CONDA_ROOT/bin/scenicplus-grn-initialize"
-  chmod +x "$target_dir/install.sh" "$target_dir/check_environment.sh" "$target_dir/initialize_scenicplus_project.sh" "$target_dir/install_r.R"
+  chmod +x "$target_dir/install.sh" "$target_dir/bin/check_environment.sh" "$target_dir/bin/initialize_scenicplus_project.sh" "$target_dir/bin/install_r.R"
   echo "Copied installer to: $target_dir"
   echo "Re-running from recommended directory."
   export SCENICPLUS_INSTALLER_RELOCATED=1
@@ -330,11 +342,11 @@ check_permissions() {
 select_env_file() {
   case "$(uname -s)-$(uname -m)" in
     Darwin-arm64)
-      echo "$SCRIPT_DIR/environment-macos-arm64.yml"
+      echo "$CONFIG_DIR/environment-macos-arm64.yml"
       ;;
     Linux-*)
       export CONDA_SUBDIR="${CONDA_SUBDIR:-linux-64}"
-      echo "$SCRIPT_DIR/environment-linux-64.yml"
+      echo "$CONFIG_DIR/environment-linux-64.yml"
       ;;
     *)
       die "Unsupported platform: $(uname -s)-$(uname -m)"
@@ -550,7 +562,7 @@ pip_install_github_or_local() {
 
   for ((attempt = 1; attempt <= GITHUB_TRIES; attempt++)); do
     echo "Installing $label from GitHub (attempt $attempt/$GITHUB_TRIES)."
-    if "${pip_env[@]}" python -m pip install --retries 3 --timeout 120 --no-deps --force-reinstall -c "$SCRIPT_DIR/pip-constraints.txt" "$requirement"; then
+    if "${pip_env[@]}" python -m pip install --retries 3 --timeout 120 --no-deps --force-reinstall -c "$CONFIG_DIR/pip-constraints.txt" "$requirement"; then
       return 0
     fi
     echo "GitHub pip install failed for $label; retrying after ${attempt}s."
@@ -560,7 +572,7 @@ pip_install_github_or_local() {
   if [[ -s "$archive" ]]; then
     echo "GitHub pip install failed after $GITHUB_TRIES attempts; installing $label from bundled source archive: $archive"
     verify_vendor_archive "$archive"
-    "${pip_env[@]}" python -m pip install --no-deps --force-reinstall -c "$SCRIPT_DIR/pip-constraints.txt" "$archive"
+    "${pip_env[@]}" python -m pip install --no-deps --force-reinstall -c "$CONFIG_DIR/pip-constraints.txt" "$archive"
     return 0
   fi
 
@@ -739,8 +751,8 @@ install_source_layer() {
 
   python -m pip install --retries 5 --timeout 120 --upgrade "setuptools==80.10.2" "wheel==0.47.0"
 
-  python -m pip install --retries 5 --timeout 120 --no-deps --force-reinstall -c "$SCRIPT_DIR/pip-constraints.txt" \
-    -r "$SCRIPT_DIR/pip-constraints.txt"
+  python -m pip install --retries 5 --timeout 120 --no-deps --force-reinstall -c "$CONFIG_DIR/pip-constraints.txt" \
+    -r "$CONFIG_DIR/pip-constraints.txt"
 
   pip_install_github_or_local \
     "loomxpy @ git+https://github.com/aertslab/LoomXpy@${LOOMXPY_COMMIT}" \
@@ -790,19 +802,19 @@ copy_recipe_into_env() {
   if [[ -d "$CONDA_PREFIX/share/scenicplus-grn/scripts" ]]; then
     find "$CONDA_PREFIX/share/scenicplus-grn/scripts" -type f -name "*.py" -exec chmod +x {} \;
   fi
-  cp -f "$SCRIPT_DIR/check_environment.sh" "$CONDA_ROOT/bin/scenicplus-grn-check"
-  cp -f "$SCRIPT_DIR/initialize_scenicplus_project.sh" "$CONDA_ROOT/bin/scenicplus-grn-initialize"
+  cp -f "$BIN_DIR/check_environment.sh" "$CONDA_ROOT/bin/scenicplus-grn-check"
+  cp -f "$BIN_DIR/initialize_scenicplus_project.sh" "$CONDA_ROOT/bin/scenicplus-grn-initialize"
   rm -f "$CONDA_ROOT/bin/scenicplus-grn-init-parameters"
   chmod +x "$CONDA_ROOT/bin/scenicplus-grn-check" "$CONDA_ROOT/bin/scenicplus-grn-initialize"
-  chmod +x "$CONDA_PREFIX/share/scenicplus-grn/install.sh" "$CONDA_PREFIX/share/scenicplus-grn/check_environment.sh" "$CONDA_PREFIX/share/scenicplus-grn/initialize_scenicplus_project.sh" "$CONDA_PREFIX/share/scenicplus-grn/install_r.R"
+  chmod +x "$CONDA_PREFIX/share/scenicplus-grn/install.sh" "$CONDA_PREFIX/share/scenicplus-grn/bin/check_environment.sh" "$CONDA_PREFIX/share/scenicplus-grn/bin/initialize_scenicplus_project.sh" "$CONDA_PREFIX/share/scenicplus-grn/bin/install_r.R"
 }
 
 run_checks() {
   local check_args=(--conda-root "$CONDA_ROOT" --env-name "$ENV_NAME" --skip-workflow-assets)
   if [[ "$INSTALL_R" == "1" ]]; then
-    bash "$SCRIPT_DIR/check_environment.sh" "${check_args[@]}"
+    bash "$BIN_DIR/check_environment.sh" "${check_args[@]}"
   else
-    bash "$SCRIPT_DIR/check_environment.sh" "${check_args[@]}" --skip-r
+    bash "$BIN_DIR/check_environment.sh" "${check_args[@]}" --skip-r
   fi
 }
 
@@ -893,7 +905,7 @@ main() {
   if [[ "$INSTALL_R" == "1" ]]; then
     export SCENICPLUS_VENDOR_GITHUB_DIR="$VENDOR_GITHUB_DIR"
     export SCENICPLUS_AUTOZYME_ARCHIVE="$VENDOR_GITHUB_DIR/autozyme-${AUTOZYME_COMMIT}.tar.gz"
-    Rscript "$SCRIPT_DIR/install_r.R"
+    Rscript "$BIN_DIR/install_r.R"
   fi
   run_checks
   copy_recipe_into_env

@@ -138,8 +138,8 @@ if [[ ! -d "$ENV_PREFIX" ]]; then
   echo "ERROR: conda environment not found: $ENV_PREFIX" >&2
   exit 1
 fi
-if [[ ! -f "$SCENICPLUS_HOME/check_environment.sh" ]]; then
-  echo "ERROR: installed checker not found: $SCENICPLUS_HOME/check_environment.sh" >&2
+if [[ ! -f "$SCENICPLUS_HOME/bin/check_environment.sh" ]]; then
+  echo "ERROR: installed checker not found: $SCENICPLUS_HOME/bin/check_environment.sh" >&2
   exit 1
 fi
 if [[ ! -f "$SCENICPLUS_HOME/scripts/init_scenicplus_project.py" ]]; then
@@ -149,7 +149,7 @@ fi
 
 mkdir -p "$PROJECT_DIR/logs"
 echo "Running environment check..."
-bash "$SCENICPLUS_HOME/check_environment.sh" \
+bash "$SCENICPLUS_HOME/bin/check_environment.sh" \
   --conda-root "$CONDA_ROOT" \
   --env-name "$ENV_NAME" \
   2>&1 | tee "$PROJECT_DIR/logs/check_environment.log"

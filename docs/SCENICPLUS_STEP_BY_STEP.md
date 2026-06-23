@@ -115,7 +115,7 @@ Run the installed environment and workflow integrity check:
 
 ```bash
 mkdir -p "$PROJECT_DIR/logs"
-bash "$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn/check_environment.sh" \
+bash "$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn/bin/check_environment.sh" \
   --conda-root "$CONDA_ROOT" \
   --env-name "$ENV_NAME" \
   2>&1 | tee "$PROJECT_DIR/logs/pre_step0_check_environment.log"
@@ -124,7 +124,7 @@ bash "$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn/check_environment.sh" \
 Then run the one-step initializer. It validates the parameter values, checks the conda environment, updates the project settings file, and initializes the project runtime files:
 
 ```bash
-bash "$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn/initialize_scenicplus_project.sh"
+bash "$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn/bin/initialize_scenicplus_project.sh"
 ```
 
 Before running downstream steps, confirm every parameter here once (absolute paths, organism, layout, object path) and keep this file as the source of truth.
