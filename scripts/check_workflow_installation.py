@@ -25,6 +25,7 @@ REQUIRED_SCRIPTS = [
     "normalize_bedlike_to_ucsc_standard.py",
     "standardize_atac_inputs.py",
     "inspect_annotated_object.py",
+    "review_annotated_object_inspection.py",
     "export_annotated_object.py",
     "inspect_annotated_object_for_scenicplus.R",
     "export_annotated_seurat_for_scenicplus.R",
@@ -35,10 +36,12 @@ REQUIRED_SCRIPTS = [
     "make_metacell_gex_h5ad.py",
     "reassign_fragments_to_metacells.py",
     "validate_pseudobulk_files.py",
+    "check_pycistopic_completion.py",
     "run_pycistopic_workflow.py",
     "check_cistopic_cell_names.py",
     "standardize_region_sets.py",
     "build_custom_cistarget_db.py",
+    "run_scenicplus_motif_enrichment_split.py",
     "prepare_scenicplus_organism_files.py",
     "initialize_scenicplus_snakemake.py",
     "generate_scenicplus_config.py",
@@ -48,14 +51,15 @@ REQUIRED_SCRIPTS = [
     "compare_scenicplus_stability.py",
     "test_eregulon_auc_by_condition.py",
     "audit_scenicplus_output_tiers.py",
-    "plot_scenicplus_publication_outputs.py",
+    "extract_scenicplus_plot_data.py",
+    "plot_scenicplus_publication_outputs.R",
+    "plot_scenicplus_condition_stats.R",
     "run_scenicplus_postprocess.py",
 ]
 
 REQUIRED_MODULES = [
     "autozyme_runtime.py",
     "autozyme_runtime.R",
-    "atac_doublet_scrublet.py",
 ]
 
 REQUIRED_COMMANDS = [

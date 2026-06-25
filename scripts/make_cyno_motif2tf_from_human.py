@@ -1,4 +1,16 @@
 from pathlib import Path
+import sys
+
+if any(arg in {"-h", "--help"} for arg in sys.argv[1:]):
+    print(
+        "Usage: make_cyno_motif2tf_from_human.py\n\n"
+        "Create a cynomolgus macaque motif2TF table from the Aerts human HGNC "
+        "v10 motif2TF table by mapping TF gene names through Ensembl BioMart "
+        "one-to-one human-cynomolgus orthology. Uses cached orthology when "
+        "resources/cyno/human_cynomolgus_orthology_biomart.tsv exists."
+    )
+    raise SystemExit(0)
+
 import pandas as pd
 from pybiomart import Server
 

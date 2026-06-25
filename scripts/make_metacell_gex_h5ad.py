@@ -39,7 +39,8 @@ def main() -> None:
             "Usage: make_metacell_gex_h5ad.py\n\n"
             "Build inputs/gex.h5ad from metacell RNA counts written by "
             "prepare_metacell_inputs_from_seurat.R. Requires $PROJECT_DIR and "
-            "work/metacells/rna_counts.genes_by_metacells.mtx.gz."
+            "work/metacells/rna_counts.genes_by_metacells.mtx.gz. Updates "
+            "ACTIVE_GEX_H5AD in scenicplus_project.env."
         )
         return
     matrix_path = WORK / "rna_counts.genes_by_metacells.mtx.gz"

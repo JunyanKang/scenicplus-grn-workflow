@@ -1,4 +1,15 @@
 #!/usr/bin/env Rscript
+args <- commandArgs(trailingOnly = TRUE)
+if (any(args %in% c("-h", "--help"))) {
+  cat(
+    "Usage: export_annotated_seurat_for_scenicplus.R\n\n",
+    "Export active RNA counts and cell metadata from an inspected Seurat RDS/QS\n",
+    "object using $PROJECT_DIR/inputs/annotated_object_params.tsv.\n",
+    sep = ""
+  )
+  quit(status = 0)
+}
+
 suppressPackageStartupMessages({
   library(Seurat)
   library(Matrix)

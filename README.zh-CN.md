@@ -37,6 +37,8 @@ Installed workflow assets:
                                       Installed to $CONDA_PREFIX/share/scenicplus-grn/scripts/.
                                       Includes project parameter setup, raw-data sample-sheet generation,
                                       pycisTopic, cisTarget DB, SCENIC+ config, Snakemake and postprocessing wrappers.
+  $CONDA_PREFIX/bin/spgrn-*  安装时生成的短命令入口。
+                                      这些 wrapper 使用当前环境的 Python/Rscript 调用 share/ 下的源码脚本。
   modules/                           Required internal helper modules imported by scripts; not user-facing commands.
                                       Installed to $CONDA_PREFIX/share/scenicplus-grn/modules/.
 
@@ -62,7 +64,7 @@ bash install.sh
 脚本会先查找 conda/miniforge/miniconda/mamba/anaconda 这类 conda 根目录。也可以显式指定：
 
 ```bash
-CONDA_ROOT=/path/to/conda bash install.sh
+CONDA_ROOT=/absolute/path/to/conda bash install.sh
 ```
 
 如果解压目录不在检测到的 conda 根目录下面，安装器会询问是否把自身复制到：
@@ -288,19 +290,24 @@ Linux 下，如果没有设置 `CONDA_SUBDIR`，脚本会导出 `CONDA_SUBDIR=li
 
 安装器版本锁定到本地 macOS 成功 dry run。Linux recipe 是 conda-first：Python、CLI、genomics、SCENIC 相关包和 R base 由 mamba 从 conda-forge/bioconda 解析，并兼容 CentOS7/glibc 2.17。`config/environment-linux-64.yml` 固定顶层安装版本；`config/locks/environment-linux-64.solved-lock.yml` 记录完整 dry-run solve，包括传递依赖 build string，用于审计和排错。pip 只用于小型 pinned supplement 和精确 GitHub source commits。SCENIC+/pycisTopic/pycistarget source commits 在不同平台保持一致。release archive 还包含 `archives/vendor.tar.gz`；`install.sh` 会在安装前把它解压为 `.vendor/`，避免受限网络下 GitHub 失败阻断安装。本地 bundled-source 安装时，安装器会显式把 pinned package versions 传给 setuptools-scm，因此 GitHub archive tarball 不需要 `.git` 元数据也能可重复构建。完整版本摘要见 `docs/VERSION_LOCK.md`。
 
-Workflow 脚本和 helper modules 安装在独立 conda 环境中，不安装到全局系统目录。激活后，`$CONDA_PREFIX` 指向该环境，脚本位于：
+Workflow 脚本和 helper modules 安装在独立 conda 环境中，不安装到全局系统目录。源码脚本位于：
 
 ```text
 $CONDA_PREFIX/share/scenicplus-grn/scripts/
 ```
 
-step-by-step 指南中为了方便会定义：
+用户直接调用的 wrapper 命令位于：
 
-```bash
-export SCENICPLUS_HOME="$CONDA_PREFIX/share/scenicplus-grn"
+```text
+$CONDA_PREFIX/bin/spgrn-*
 ```
 
-随后用 `$SCENICPLUS_HOME/scripts/<script>.py` 调用脚本。
+激活环境或 source 项目的 `project_env.sh` 后，可以直接运行：
+
+```bash
+spgrn-setup-workflow-params --section snakemake
+spgrn-run-scenicplus-snakemake --mode dryrun
+```
 
 核心 Python、命令行和基因组学层：
 
@@ -455,9 +462,9 @@ AUTOZYME_DISABLED=1 Rscript your_analysis.R
 只验证已有安装：
 
 ```bash
-CONDA_ROOT=/path/to/conda
+CONDA_ROOT=/absolute/path/to/conda
 ENV_NAME=scenicplus-grn
-bash "$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn/bin/check_environment.sh" \
+"$CONDA_ROOT/envs/$ENV_NAME/bin/spgrn-check" \
   --conda-root "$CONDA_ROOT" \
   --env-name "$ENV_NAME"
 ```

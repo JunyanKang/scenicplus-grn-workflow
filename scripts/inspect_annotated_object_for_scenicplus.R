@@ -1,9 +1,19 @@
 #!/usr/bin/env Rscript
+args <- commandArgs(trailingOnly = TRUE)
+if (any(args %in% c("-h", "--help"))) {
+  cat(
+    "Usage: inspect_annotated_object_for_scenicplus.R [--object-path PATH] [--object-format rds|qs]\n\n",
+    "Inspect a Seurat RDS/QS object for SCENIC+ export fields and write\n",
+    "annotated_object_params.tsv plus inspection reports.\n",
+    sep = ""
+  )
+  quit(status = 0)
+}
+
 suppressPackageStartupMessages({
   library(Seurat)
 })
 
-args <- commandArgs(trailingOnly = TRUE)
 get_arg <- function(flag, default = "") {
   hit <- which(args == flag)
   if (length(hit) == 0 || hit[[1]] == length(args)) default else args[[hit[[1]] + 1]]

@@ -30,7 +30,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--search-space-downstream", default=None)
     parser.add_argument("--search-space-extend-tss", default=None)
     parser.add_argument("--dem-motif-hit-thr", type=float, default=None)
+    parser.add_argument("--dem-n-cpu", type=int, default=None)
     parser.add_argument("--ctx-nes-threshold", type=float, default=None)
+    parser.add_argument("--ctx-n-cpu", type=int, default=None)
     parser.add_argument("--rho-threshold", type=float, default=None)
     parser.add_argument("--min-target-genes", type=int, default=None)
     return parser.parse_args()
@@ -74,7 +76,9 @@ def read_params(path: Path) -> dict[str, str]:
         "search_space_downstream",
         "search_space_extend_tss",
         "dem_motif_hit_thr",
+        "dem_n_cpu",
         "ctx_nes_threshold",
+        "ctx_n_cpu",
         "rho_threshold",
         "min_target_genes",
     ]
@@ -120,7 +124,9 @@ def main() -> None:
     config["params_data_preparation"]["search_space_downstream"] = get_value(args.search_space_downstream, params, "search_space_downstream", str)
     config["params_data_preparation"]["search_space_extend_tss"] = get_value(args.search_space_extend_tss, params, "search_space_extend_tss", str)
     config["params_motif_enrichment"]["dem_motif_hit_thr"] = get_value(args.dem_motif_hit_thr, params, "dem_motif_hit_thr", float)
+    config["params_motif_enrichment"]["dem_n_cpu"] = get_value(args.dem_n_cpu, params, "dem_n_cpu", int)
     config["params_motif_enrichment"]["ctx_nes_threshold"] = get_value(args.ctx_nes_threshold, params, "ctx_nes_threshold", float)
+    config["params_motif_enrichment"]["ctx_n_cpu"] = get_value(args.ctx_n_cpu, params, "ctx_n_cpu", int)
     config["params_inference"]["rho_threshold"] = get_value(args.rho_threshold, params, "rho_threshold", float)
     config["params_inference"]["min_target_genes"] = get_value(args.min_target_genes, params, "min_target_genes", int)
 

@@ -1,6 +1,6 @@
 # Release Notes
 
-## scenicplus-grn-installer v0.1.5
+## scenicplus-grn-installer v0.1.30
 
 This release packages a reproducible SCENIC+/GRN conda installer and a strict matched snRNA+snATAC workflow for annotated scMultiome projects.
 
@@ -32,6 +32,26 @@ Main deliverables:
 - Custom cisTarget database construction now emits periodic heartbeat records during long Cluster-Buster scans. The heartbeat reports elapsed time, child-process activity and watched output-file status, so a quiet log is easier to distinguish from a failed run.
 - The heartbeat interval is controlled by `heartbeat_seconds` in `inputs/cistarget_db_params.tsv`; the default is 600 seconds.
 - Environment self-checks now fail if `samtools`, `tabix`, `bgzip` or other core workflow tools resolve outside the active conda environment.
+- Custom cisTarget FASTA generation now preserves plain UCSC-style
+  `chr:start-end` region names for pycistarget compatibility.
+- SCENIC+ motif enrichment now has stage-specific `dem_n_cpu` and `ctx_n_cpu`
+  controls with dynamic defaults based on detected memory and custom DB size.
+  This prevents laptop runs from launching too many DEM/cisTarget workers while
+  still allowing larger servers to use more resources.
+- Installer defaults no longer assume project-specific condition labels, color
+  keys, cell labels or example marker genes; project-specific priorities belong
+  in each project directory.
+- Generated SCENIC+ Snakefiles are patched to honor the stage-specific motif
+  enrichment thread settings.
+- Large custom cisTarget databases can now use
+  `run_scenicplus_motif_enrichment_split.py`, which runs DEM and cisTarget
+  enrichment in independent region-set-family chunks and combines them through
+  SCENIC+ `prepare_menr`. The chunk runner is resumable and dynamically chooses
+  safe chunk concurrency from detected memory and DB size.
+- Postprocess condition statistics now handle single-condition,
+  two-condition and multi-condition projects explicitly, and optional
+  `priority_eregulons` labels keep project-specific volcano priorities in the
+  project parameter file rather than in installer defaults.
 
 The installer is intended to be unpacked anywhere, copied under a conda-style root when requested, and run with:
 

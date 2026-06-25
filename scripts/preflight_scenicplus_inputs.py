@@ -28,7 +28,11 @@ def p(path: str) -> Path:
     return out if out.is_absolute() else PROJECT / out
 
 
-thresholds = pd.read_csv(p("inputs/preflight_thresholds.tsv"), sep="\t").set_index("metric")["value"].astype(float).to_dict()
+threshold_table = pd.read_csv(p("inputs/preflight_thresholds.tsv"), sep="\t", dtype=str).fillna("")
+key_col = "metric" if "metric" in threshold_table.columns else "parameter"
+if key_col not in threshold_table.columns or "value" not in threshold_table.columns:
+    raise ValueError("inputs/preflight_thresholds.tsv must contain parameter/value or metric/value columns")
+thresholds = threshold_table.set_index(key_col)["value"].astype(float).to_dict()
 required = [
     "inputs/gex.h5ad",
     "inputs/cell_metadata.tsv",

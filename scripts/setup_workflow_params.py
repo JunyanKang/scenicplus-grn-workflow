@@ -141,6 +141,55 @@ def n_cpu_default(env: dict[str, str]) -> str:
     return str(max(1, min(16, count)))
 
 
+def file_size_gb(path: Path) -> float:
+    try:
+        return path.stat().st_size / 1_000_000_000
+    except OSError:
+        return 0.0
+
+
+def detected_memory_gb() -> tuple[float, float]:
+    try:
+        import psutil  # type: ignore
+
+        vm = psutil.virtual_memory()
+        return vm.total / 1_000_000_000, vm.available / 1_000_000_000
+    except Exception:
+        pass
+    try:
+        pages = os.sysconf("SC_PHYS_PAGES")
+        page_size = os.sysconf("SC_PAGE_SIZE")
+        total = pages * page_size / 1_000_000_000
+        return total, total * 0.60
+    except Exception:
+        return 32.0, 19.2
+
+
+def motif_enrichment_cpu_defaults(n_cpu: str) -> tuple[str, str, str]:
+    try:
+        general_n_cpu = max(1, int(float(n_cpu)))
+    except ValueError:
+        general_n_cpu = 1
+    dem_db = INPUTS / "cistarget_db" / "custom.regions_vs_motifs.scores.feather"
+    ctx_db = INPUTS / "cistarget_db" / "custom.regions_vs_motifs.rankings.feather"
+    dem_gb = file_size_gb(dem_db)
+    ctx_gb = file_size_gb(ctx_db)
+    large_db = max(dem_gb, ctx_gb) >= 6 or (dem_gb + ctx_gb) >= 12
+    if large_db:
+        total_gb, available_gb = detected_memory_gb()
+        usable_gb = max(4.0, min(total_gb * 0.65, available_gb * 0.80))
+        dem_worker_gb = max(8.0, dem_gb * 1.35 + 3.0)
+        ctx_worker_gb = max(8.0, ctx_gb * 1.20 + 3.0)
+        dem_workers = max(1, min(general_n_cpu, int(usable_gb // dem_worker_gb)))
+        ctx_workers = max(1, min(general_n_cpu, int(usable_gb // ctx_worker_gb)))
+        # Give both motif-enrichment rules the same thread footprint so Snakemake
+        # will not schedule DEM and cisTarget concurrently when cores equals it.
+        motif_workers = max(1, min(dem_workers, ctx_workers))
+        return str(motif_workers), str(motif_workers), str(motif_workers)
+    motif_n_cpu = str(max(1, min(general_n_cpu, 4)))
+    return motif_n_cpu, motif_n_cpu, str(general_n_cpu)
+
+
 def sample_ids() -> list[str]:
     path = INPUTS / "sample_sheet.tsv"
     if not path.exists():
@@ -167,6 +216,7 @@ def annotated_param_defaults() -> dict[str, str]:
 
 def defaults(env: dict[str, str]) -> dict[str, tuple[Path, dict[str, str]]]:
     n_cpu = n_cpu_default(env)
+    dem_n_cpu, ctx_n_cpu, snakemake_cores = motif_enrichment_cpu_defaults(n_cpu)
     max_memory = env.get("SCENICPLUS_MAX_MEMORY_GB", "auto")
     chromsizes = env.get("CHROMSIZES") or env.get("CHROMS") or "resources/organism.ucsc.standard.chromsizes.tsv"
     blacklist = env.get("BLACKLIST", "")
@@ -211,7 +261,7 @@ def defaults(env: dict[str, str]) -> dict[str, tuple[Path, dict[str, str]]]:
                 "min_frag": "1000",
                 "min_cell": "1",
                 "is_acc": "1",
-                "lda_backend": "cgs",
+                "lda_backend": "mallet",
                 "mallet_path": "mallet",
                 "mallet_tmp_dir": "tmp/mallet",
                 "mallet_memory_gb": "auto",
@@ -222,10 +272,6 @@ def defaults(env: dict[str, str]) -> dict[str, tuple[Path, dict[str, str]]]:
                 "ntop_regions": "3000",
                 "dar_adjpval_thr": "0.05",
                 "dar_log2fc_thr": "0.5",
-                "expected_doublet_rate": "0.1",
-                "doublet_n_prin_comps": "30",
-                "doublet_min_counts": "2",
-                "doublet_min_cells": "3",
                 "write_pseudobulk_bigwig": "0",
             },
         ),
@@ -255,7 +301,9 @@ def defaults(env: dict[str, str]) -> dict[str, tuple[Path, dict[str, str]]]:
                 "search_space_downstream": "1000 150000",
                 "search_space_extend_tss": "10 10",
                 "dem_motif_hit_thr": "3.0",
+                "dem_n_cpu": dem_n_cpu,
                 "ctx_nes_threshold": "3.0",
+                "ctx_n_cpu": ctx_n_cpu,
                 "rho_threshold": "0.05",
                 "min_target_genes": "10",
             },
@@ -272,7 +320,7 @@ def defaults(env: dict[str, str]) -> dict[str, tuple[Path, dict[str, str]]]:
         "snakemake": (
             INPUTS / "snakemake_params.tsv",
             {
-                "cores": n_cpu,
+                "cores": snakemake_cores,
                 "rerun_incomplete": "1",
                 "printshellcmds": "1",
                 "latency_wait": "60",
@@ -284,21 +332,27 @@ def defaults(env: dict[str, str]) -> dict[str, tuple[Path, dict[str, str]]]:
                 "metadata": "inputs/cell_metadata.tsv",
                 "group_col": "cell_label",
                 "condition_col": "condition",
+                "reference_condition": "auto",
+                "comparison_condition": "auto",
                 "sample_col": "sample_id",
                 "cell_col": "cell_id",
+                "umap_x": f"{annotated_params.get('reduction', 'wnn.umap') or 'wnn.umap'}_1",
+                "umap_y": f"{annotated_params.get('reduction', 'wnn.umap') or 'wnn.umap'}_2",
                 "tf_to_gene": "work/scenicplus/tf_to_gene_adj.tsv",
                 "direct_auc_h5mu": "results/scenicplus/AUCell_direct.h5mu",
                 "direct_eregulons": "results/scenicplus/eRegulons_direct.tsv",
-                "direct_stats_outdir": "results/scenicplus_stats/auc_by_condition_direct",
-                "direct_figures_outdir": "results/scenicplus_figures/direct",
+                "direct_stats_outdir": "results/scenicplus_figures",
+                "direct_figures_outdir": "results/scenicplus_figures",
                 "extended_auc_h5mu": "results/scenicplus/AUCell_extended.h5mu",
                 "extended_eregulons": "results/scenicplus/eRegulons_extended.tsv",
-                "extended_stats_outdir": "results/scenicplus_stats/auc_by_condition_extended",
-                "extended_figures_outdir": "results/scenicplus_figures/extended",
+                "extended_stats_outdir": "results/scenicplus_figures",
+                "extended_figures_outdir": "results/scenicplus_figures",
                 "plot_top_n": "30",
                 "plot_umap_n": "12",
                 "network_top_tfs": "8",
                 "network_targets_per_tf": "12",
+                "plot_style_config": "results/scenicplus_figures/plot_style_parameters.tsv",
+                "priority_eregulons": "",
             },
         ),
     }

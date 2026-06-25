@@ -14,6 +14,20 @@ import pandas as pd
 
 PROJECT = Path(os.environ.get("PROJECT_DIR", ".")).expanduser().resolve()
 SCRIPT_DIR = Path(__file__).resolve().parent
+INFERENCE_RERUN_RULES = [
+    "prepare_GEX_ACC_multiome",
+    "motif_enrichment_cistarget",
+    "motif_enrichment_dem",
+    "prepare_menr",
+    "get_search_space",
+    "tf_to_gene",
+    "region_to_gene",
+    "eGRN_direct",
+    "eGRN_extended",
+    "AUCell_direct",
+    "AUCell_extended",
+    "scplus_mudata",
+]
 
 
 def parse_args() -> argparse.Namespace:
@@ -21,6 +35,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--mode", choices=["dryrun", "run"], default="dryrun")
     parser.add_argument("--params", default=None, help="Default: $PROJECT_DIR/inputs/snakemake_params.tsv")
     parser.add_argument("--cores", type=int, default=None, help="Override inputs/snakemake_params.tsv.")
+    parser.add_argument(
+        "--rerun-inference",
+        action="store_true",
+        help="Force a second SCENIC+ inference run without forcing genome-resource download.",
+    )
     return parser.parse_args()
 
 
@@ -36,6 +55,40 @@ def truthy(value: str) -> bool:
     return str(value).strip().lower() in {"1", "true", "yes", "on"}
 
 
+def restore_prepared_genome_resources() -> None:
+    env = {}
+    for name in ["project_env.sh", "scenicplus_project.env"]:
+        path = PROJECT / name
+        if not path.exists():
+            continue
+        for raw in path.read_text().splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            if line.startswith("export "):
+                line = line[len("export ") :]
+            if "=" in line:
+                key, value = line.split("=", 1)
+                env[key.strip()] = value.strip().strip("'").strip('"')
+    organism = env.get("ORGANISM") or os.environ.get("ORGANISM")
+    if not organism:
+        return
+    pairs = [
+        (
+            PROJECT / "resources" / organism / f"{organism}.ucsc.standard.genome_annotation.tsv",
+            PROJECT / "work" / "scenicplus" / "genome_annotation.tsv",
+        ),
+        (
+            PROJECT / "resources" / organism / f"{organism}.ucsc.standard.chromsizes.tsv",
+            PROJECT / "work" / "scenicplus" / "chromsizes.tsv",
+        ),
+    ]
+    for src, dst in pairs:
+        if src.exists() and (not dst.exists() or dst.stat().st_size == 0):
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            dst.write_bytes(src.read_bytes())
+
+
 def main() -> None:
     args = parse_args()
     params_path = Path(args.params).expanduser() if args.params else PROJECT / "inputs" / "snakemake_params.tsv"
@@ -46,9 +99,14 @@ def main() -> None:
     snake_dir = PROJECT / "work" / "scenicplus" / "Snakemake"
     if not snake_dir.exists():
         raise FileNotFoundError(snake_dir)
+    restore_prepared_genome_resources()
     logs = PROJECT / "logs"
     logs.mkdir(parents=True, exist_ok=True)
-    log_name = "scenicplus_dryrun.log" if args.mode == "dryrun" else f"scenicplus_run_{datetime.now():%Y%m%d_%H%M%S}.log"
+    if args.mode == "dryrun":
+        log_name = "scenicplus_dryrun.log"
+    else:
+        suffix = "inference_rerun" if args.rerun_inference else "run"
+        log_name = f"scenicplus_{suffix}_{datetime.now():%Y%m%d_%H%M%S}.log"
     cmd = ["snakemake", "--cores", str(cores)]
     if args.mode == "dryrun":
         cmd.insert(1, "-n")
@@ -59,6 +117,8 @@ def main() -> None:
         cmd.append("--printshellcmds")
     if params.get("latency_wait"):
         cmd.extend(["--latency-wait", str(params["latency_wait"])])
+    if args.rerun_inference:
+        cmd.extend(["--forcerun", *INFERENCE_RERUN_RULES])
     print("RUN", " ".join(cmd))
     with (logs / log_name).open("w") as log:
         proc = subprocess.Popen(cmd, cwd=snake_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)

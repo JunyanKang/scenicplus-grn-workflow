@@ -51,11 +51,20 @@ params_motif_enrichment:
   dem_log2fc_thr: 1.0
   dem_mean_fg_thr: 0.0
   dem_motif_hit_thr: 3.0
+  dem_n_cpu: 1
+  ctx_n_cpu: 1
   motif_similarity_fdr: 0.001
   orthologous_identity_threshold: 0.0
 params_inference:
   tf_to_gene_importance_method: "GBM"
   region_to_gene_importance_method: "GBM"
   region_to_gene_correlation_method: "SR"
+  order_regions_to_genes_by: "importance"
+  order_TFs_to_genes_by: "importance"
+  gsea_n_perm: 1000
+  quantile_thresholds_region_to_gene: "0.85 0.90 0.95"
+  top_n_regionTogenes_per_gene: "5 10 15"
+  top_n_regionTogenes_per_region: ""
+  min_regions_per_gene: 0
   rho_threshold: 0.05
   min_target_genes: 10

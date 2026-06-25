@@ -56,7 +56,8 @@ def main() -> None:
             "Usage: reassign_fragments_to_metacells.py\n\n"
             "Rewrite single-cell ATAC fragments to metacell barcodes using "
             "inputs/metacell_membership.tsv and inputs/sample_sheet.tsv. "
-            "Updates inputs/sample_sheet.tsv to point to metacell fragment files."
+            "Writes work/metacell_fragments/*.tsv.gz plus tabix indexes, then "
+            "updates inputs/sample_sheet.tsv to point to metacell fragment files."
         )
         return
     WORK.mkdir(parents=True, exist_ok=True)

@@ -64,7 +64,7 @@ Modes:
 
 Options:
   ENV_NAME=scenicplus-grn       Target env name for MODE=new.
-  CONDA_ROOT=/path/to/conda     Conda/miniforge/miniconda/mamba root.
+  CONDA_ROOT=/absolute/path/to/conda     Conda/miniforge/miniconda/mamba root.
   FORCE=1                       Remove and recreate existing ENV_NAME.
   INSTALL_R=0                   Skip optional R/hdWGCNA layer.
   GITHUB_TRIES=3                GitHub attempts before bundled source archives are used.
@@ -312,14 +312,59 @@ copy_to_conda_share_if_needed() {
   mkdir -p "$CONDA_ROOT/share"
   mkdir -p "$target_dir"
   copy_distribution_assets "$target_dir"
-  cp -f "$BIN_DIR/check_environment.sh" "$CONDA_ROOT/bin/scenicplus-grn-check"
-  cp -f "$BIN_DIR/initialize_scenicplus_project.sh" "$CONDA_ROOT/bin/scenicplus-grn-initialize"
-  chmod +x "$CONDA_ROOT/bin/scenicplus-grn-check" "$CONDA_ROOT/bin/scenicplus-grn-initialize"
   chmod +x "$target_dir/install.sh" "$target_dir/bin/check_environment.sh" "$target_dir/bin/initialize_scenicplus_project.sh" "$target_dir/bin/install_r.R"
   echo "Copied installer to: $target_dir"
   echo "Re-running from recommended directory."
   export SCENICPLUS_INSTALLER_RELOCATED=1
   exec bash "$target_dir/install.sh" "$@"
+}
+
+install_env_wrappers() {
+  local env_bin="$CONDA_PREFIX/bin"
+  local share_dir="$CONDA_PREFIX/share/scenicplus-grn"
+  local script_dir="$share_dir/scripts"
+  local script base cmd wrapper
+  mkdir -p "$env_bin"
+  rm -f "$env_bin"/scenicplus-grn-*
+
+  cat > "$env_bin/spgrn-check" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+exec "$(dirname "${BASH_SOURCE[0]}")/../share/scenicplus-grn/bin/check_environment.sh" "$@"
+EOF
+  cat > "$env_bin/spgrn-initialize" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+exec "$(dirname "${BASH_SOURCE[0]}")/../share/scenicplus-grn/bin/initialize_scenicplus_project.sh" "$@"
+EOF
+
+  if [[ -d "$script_dir" ]]; then
+    for script in "$script_dir"/*.py; do
+      [[ -f "$script" ]] || continue
+      base="$(basename "$script" .py)"
+      cmd="spgrn-${base//_/-}"
+      wrapper="$env_bin/$cmd"
+      cat > "$wrapper" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+exec "\$(dirname "\${BASH_SOURCE[0]}")/python" "\$(dirname "\${BASH_SOURCE[0]}")/../share/scenicplus-grn/scripts/$base.py" "\$@"
+EOF
+      chmod +x "$wrapper"
+    done
+    for script in "$script_dir"/*.R; do
+      [[ -f "$script" ]] || continue
+      base="$(basename "$script" .R)"
+      cmd="spgrn-${base//_/-}"
+      wrapper="$env_bin/$cmd"
+      cat > "$wrapper" <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+exec "\$(dirname "\${BASH_SOURCE[0]}")/Rscript" "\$(dirname "\${BASH_SOURCE[0]}")/../share/scenicplus-grn/scripts/$base.R" "\$@"
+EOF
+      chmod +x "$wrapper"
+    done
+  fi
+  chmod +x "$env_bin/spgrn-check" "$env_bin/spgrn-initialize"
 }
 
 check_writable_dir() {
@@ -802,11 +847,8 @@ copy_recipe_into_env() {
   if [[ -d "$CONDA_PREFIX/share/scenicplus-grn/scripts" ]]; then
     find "$CONDA_PREFIX/share/scenicplus-grn/scripts" -type f -name "*.py" -exec chmod +x {} \;
   fi
-  cp -f "$BIN_DIR/check_environment.sh" "$CONDA_ROOT/bin/scenicplus-grn-check"
-  cp -f "$BIN_DIR/initialize_scenicplus_project.sh" "$CONDA_ROOT/bin/scenicplus-grn-initialize"
-  rm -f "$CONDA_ROOT/bin/scenicplus-grn-init-parameters"
-  chmod +x "$CONDA_ROOT/bin/scenicplus-grn-check" "$CONDA_ROOT/bin/scenicplus-grn-initialize"
   chmod +x "$CONDA_PREFIX/share/scenicplus-grn/install.sh" "$CONDA_PREFIX/share/scenicplus-grn/bin/check_environment.sh" "$CONDA_PREFIX/share/scenicplus-grn/bin/initialize_scenicplus_project.sh" "$CONDA_PREFIX/share/scenicplus-grn/bin/install_r.R"
+  install_env_wrappers
 }
 
 run_checks() {

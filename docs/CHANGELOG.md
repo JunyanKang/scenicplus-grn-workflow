@@ -1,5 +1,209 @@
 # Changelog
 
+## 0.1.30 - 2026-06-25
+
+Separates installer-level workflow logic from project-specific analysis choices.
+
+Highlights:
+
+- Removes hard-coded condition-order preferences from generic plotting and source-table extraction.
+- Stops mapping legacy project-specific color keys onto generic condition colors.
+- Replaces project-specific changelog examples with generic wording.
+- Keeps priority eRegulon labels as an explicit project-level input instead of an installer default.
+
+## 0.1.29 - 2026-06-25
+
+Tightens condition-statistics semantics and keeps project-specific figure priorities outside installer defaults.
+
+Highlights:
+
+- Adds optional `priority_eregulons` support for R-rendered condition volcano labels without embedding project-specific genes or cell labels.
+- Clarifies automatic condition statistics: single-condition projects produce descriptive sample means, two-condition projects report comparison-minus-reference deltas, and multi-condition projects use an omnibus sample-level test.
+- Replaces stale project-specific default colors in legacy Python plotting paths with generic fallback colors.
+- Synchronizes English and Chinese step-by-step wording for condition statistics and priority volcano labels.
+
+## 0.1.28 - 2026-06-25
+
+Tightens SCENIC+ postprocess ordering, style-parameter documentation and eRegulon sign display.
+
+Highlights:
+
+- Keeps Step 11 as the single postprocess stage: audit first, 01-08 eRegulon PDFs/source tables second, and 09+ condition-statistics PDFs/tables last.
+- Documents `spgrn-run-scenicplus-postprocess --task` and `--layer` values directly in the step-by-step guides and in the generated R plotting style document.
+- Adds a compact output-location table instead of a long static PDF/source-file list.
+- Generates `plot_style_parameters.md` from the R renderers and keeps `plot_style_parameters.tsv` as a clean two-column `parameter/value` file.
+- Drops stale project-specific style keys when rewriting the style TSV while still mapping legacy color keys onto the generic style parameters.
+- Preserves SCENIC+ eRegulon signs in display labels, so TF-level RNA expression is not conflated with target gene-set AUCell activity.
+- Adds clearer command-line help for the postprocess wrapper.
+
+## 0.1.27 - 2026-06-25
+
+Switches SCENIC+ postprocess figures to an R rendering layer and fixes true condition-resolved plotting.
+
+Highlights:
+
+- Extracts SCENIC+ figure source tables with Python, then renders all PDF figures with R/ggplot2/patchwork.
+- Makes `_condition_` heatmap and dot-heatmap outputs true `cell_label_condition` joint-group displays, ordered as cell label followed by condition.
+- Makes condition UMAP files true condition facets and merges the eRegulon activity embedding into one PDF with all-cells plus condition panels.
+- Stops generating condition-suffixed model-level region-gene, target-region-overlap and network PDFs.
+- Adds `plot_style_parameters.tsv` for rerunning figures after editing colors, font sizes, point sizes, line widths and panel layout.
+- Defines condition statistics automatically for single-condition, two-condition and multi-condition projects; two-condition deltas are recorded with the resolved `contrast`, and reference/comparison overrides remain available when needed.
+- Clusters heatmap eRegulon rows from the plotted numeric matrix while preserving explicit `cell_label_condition` column order for condition heatmaps.
+- Labels target genes in the compact TF-target network PDF.
+- Merges postprocess documentation so 01-08 standard figures and 09+ condition-statistics figures are generated through one ordered `--task all` command.
+- Automatically writes `plot_style_parameters.md` next to `plot_style_parameters.tsv` to document R plotting parameters and the one-command redraw workflow.
+- Updates self-check requirements for the new extractor and R renderers, and verifies `samtools`, `tabix` and `bgzip` resolve from the conda environment.
+
+## 0.1.26 - 2026-06-25
+
+Removes metacell-stage ATAC doublet placeholder outputs.
+
+Highlights:
+
+- Stops writing `atac_doublets.tsv` and `atac_doublet_diagnostics.pdf` for metacell-based pycisTopic runs.
+- Removes ATAC doublet files from pycisTopic completion checks, final checks, manifests and output-tier audit requirements.
+- Removes unused doublet parameters from new pycisTopic parameter files.
+- Documents doublet filtering as an upstream single-cell QC prerequisite rather than a current metacell-stage analysis output.
+
+## 0.1.25 - 2026-06-25
+
+Flattens SCENIC+ direct/extended figure outputs into one figure directory.
+
+Highlights:
+
+- Writes direct and extended outputs into `results/scenicplus_figures` without layer subdirectories.
+- Appends `_direct` or `_extended` to figure and source-data filenames to avoid collisions.
+- Adds condition-grouped counterparts for the main eRegulon figure series using `_condition_direct` and `_condition_extended` suffixes.
+- Updates postprocess defaults, audit checks, and step-by-step output paths.
+
+## 0.1.24 - 2026-06-25
+
+Clusters numeric axes in SCENIC+ heatmap-style figures.
+
+Highlights:
+
+- Applies hierarchical clustering to heatmap rows and columns before plotting.
+- Applies the same numeric ordering to eRegulon dot heatmaps.
+- Clusters condition sample heatmaps and cell-label condition-effect heatmaps.
+- Enlarges dot-heatmap bottom margin to avoid clipped rotated labels.
+
+## 0.1.23 - 2026-06-25
+
+Systematically numbers SCENIC+ figure PDFs within each layer directory.
+
+Highlights:
+
+- Names all direct and extended figure PDFs with directory-level numeric prefixes.
+- Uses automatic numbering for condition-level PDFs, including the number of cell-label-stratified comparisons actually present.
+- Updates audit checks and step-by-step output paths to the numbered PDF names.
+
+## 0.1.22 - 2026-06-25
+
+Moves condition-level AUC statistics into layer figure directories.
+
+Highlights:
+
+- Writes condition-level tables and PDFs under `results/scenicplus_figures/direct` and `results/scenicplus_figures/extended`.
+- Splits the former multi-page condition statistics PDF into one-panel vector PDFs with numbered filenames.
+- Adds cell-label-stratified condition AUC statistics and per-label volcano PDFs when both conditions are present in a label.
+- Updates postprocess defaults, audit checks, and step-by-step output paths.
+
+## 0.1.21 - 2026-06-25
+
+Fixes SCENIC+ postprocess UMAP plotting and condition-level display labels.
+
+Highlights:
+
+- Preserves annotated-object UMAP coordinates during metacell metadata export.
+- Records postprocess `umap_x` and `umap_y` from the selected reduction, so
+  eRegulon AUC UMAP plots no longer fall back to a placeholder page.
+- Uses manuscript-readable eRegulon labels such as `Sox5 (62 targets)` in
+  figures while keeping raw SCENIC+ names in source tables.
+- Adds display labels and an explicit condition contrast column to
+  condition-level eRegulon AUC statistics.
+- Widens fixed UMAP panel layout to avoid colorbar and label clipping.
+
+## 0.1.20 - 2026-06-25
+
+Reduces release archive size.
+
+Highlights:
+
+- Release tarballs include `archives/vendor.tar.gz` only, not the extracted
+  `.vendor/` directory.
+- Excludes Python bytecode caches and macOS `.DS_Store` files from release
+  tarballs.
+
+## 0.1.19 - 2026-06-25
+
+Aligns the step-by-step guide with a successful end-to-end project run.
+
+Highlights:
+
+- Defaults pycisTopic topic modeling to the installed MALLET backend.
+- Removes manual file-inspection snippets and over-detailed auto-resource
+  tuning text from the step-by-step guides.
+- Keeps the student-facing workflow focused on required commands, biological
+  purpose, and output interpretation.
+
+## 0.1.18 - 2026-06-25
+
+Shortens user-facing workflow commands.
+
+Highlights:
+
+- Installs environment-local `spgrn-*` wrappers instead of long
+  `scenicplus-grn-*` wrappers.
+- Removes old long wrappers during installation so each environment exposes one
+  command style.
+- Updates English and Chinese README and step-by-step guides to use the short
+  wrapper names.
+
+## 0.1.7 - 2026-06-24
+
+Adds resource-aware split motif enrichment for large SCENIC+ custom cisTarget databases.
+
+Highlights:
+
+- Adds `run_scenicplus_motif_enrichment_split.py`, which runs DEM and
+  cisTarget motif enrichment as independent region-set-family chunks and then
+  calls SCENIC+ `prepare_menr` with all resulting HDF5 files.
+- The split workflow is resumable: existing non-empty chunk HDF5 outputs are
+  skipped unless `--force` is used.
+- Adds automatic `--max-parallel-chunks auto` planning based on current
+  available memory, total memory, DB size and configured SCENIC+ CPU limits.
+- Updates English and Chinese step-by-step guides to recommend the split
+  motif-enrichment route for large custom ranking/scores databases.
+- Adds one-command reports for annotated-object pre-export review and
+  pycisTopic completion checks, replacing manual `cat`/`ls` audit snippets in
+  the step-by-step guides.
+- Split motif enrichment now clamps BLAS/OpenMP thread environment variables to
+  the resolved stage worker count for more predictable laptop/server resource
+  use.
+- DEM chunks that produce no HDF5 under formal thresholds now auto-write an
+  `.empty.tsv` marker, launch a relaxed-threshold diagnostic report automatically,
+  and continue if at least one DEM/CTX HDF5 exists; all-DEM-empty runs now stop
+  with a hard error and a pointer to the diagnostic report directory.
+
+## 0.1.6 - 2026-06-24
+
+Fixes large custom cisTarget database handoff into SCENIC+ motif enrichment.
+
+Highlights:
+
+- `build_custom_cistarget_db.py` now writes consensus FASTA headers as plain
+  UCSC-style `chr:start-end` region names, avoiding duplicated
+  `chr:start-end::chr:start-end` labels that pycistarget cannot parse.
+- Adds `dem_n_cpu` and `ctx_n_cpu` to SCENIC+ config generation so DEM and
+  cisTarget motif enrichment can use stage-specific worker counts.
+- Automatically estimates safe motif-enrichment workers from detected machine
+  memory and custom DB size, scaling down on laptops and allowing more workers
+  on larger servers.
+- Patches generated SCENIC+ Snakefiles to use the stage-specific motif
+  enrichment thread settings.
+- Restores complete eRegulon inference defaults in the packaged config
+  template.
+
 ## 0.1.5 - 2026-06-23
 
 Adds long-running custom cisTarget heartbeat logging.

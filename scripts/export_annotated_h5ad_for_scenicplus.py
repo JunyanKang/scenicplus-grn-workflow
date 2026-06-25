@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import os
+import sys
 
 PROJECT = Path(os.environ.get("PROJECT_DIR", ".")).expanduser().resolve()
 os.environ.setdefault("MPLCONFIGDIR", str(PROJECT / "tmp" / "matplotlib"))
@@ -27,6 +28,14 @@ def read_params(path: Path) -> dict[str, str]:
 
 
 def main() -> None:
+    if any(arg in {"-h", "--help"} for arg in sys.argv[1:]):
+        print(
+            "Usage: export_annotated_h5ad_for_scenicplus.py\n\n"
+            "Export active RNA counts and metadata from an inspected AnnData h5ad "
+            "object to inputs/cell_metadata.tsv and inputs/gex.h5ad. Requires "
+            "$PROJECT_DIR/inputs/annotated_h5ad_params.tsv."
+        )
+        return
     INPUTS.mkdir(parents=True, exist_ok=True)
     RESULTS.mkdir(parents=True, exist_ok=True)
     params = read_params(INPUTS / "annotated_h5ad_params.tsv")

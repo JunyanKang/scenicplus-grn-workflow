@@ -115,7 +115,7 @@ Run the installed environment and workflow integrity check:
 
 ```bash
 mkdir -p "$PROJECT_DIR/logs"
-bash "$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn/bin/check_environment.sh" \
+"$CONDA_ROOT/envs/$ENV_NAME/bin/spgrn-check" \
   --conda-root "$CONDA_ROOT" \
   --env-name "$ENV_NAME" \
   2>&1 | tee "$PROJECT_DIR/logs/pre_step0_check_environment.log"
@@ -124,7 +124,7 @@ bash "$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn/bin/check_environment.sh" 
 Then run the one-step initializer. It validates the parameter values, checks the conda environment, updates the project settings file, and initializes the project runtime files:
 
 ```bash
-bash "$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn/bin/initialize_scenicplus_project.sh"
+"$CONDA_ROOT/envs/$ENV_NAME/bin/spgrn-initialize"
 ```
 
 Before running downstream steps, confirm every parameter here once (absolute paths, organism, layout, object path) and keep this file as the source of truth.
@@ -146,13 +146,13 @@ For supported organisms without an Aerts public motif2TF table, the script downl
 Prepare the project organism recorded in `$PROJECT_DIR/project_env.sh`:
 
 ```bash
-python $SCENICPLUS_HOME/scripts/prepare_official_resources.py
+spgrn-prepare-official-resources
 ```
 
 If UCSC-standard genome resources already exist and only the cisTarget motif collection or motif2TF table is missing, use:
 
 ```bash
-python $SCENICPLUS_HOME/scripts/prepare_official_resources.py --motifs-only
+spgrn-prepare-official-resources --motifs-only
 ```
 
 The `--motifs-only` command prepares the motif collection, species motif2TF table and project `inputs/cistarget_db/motif_annotations.tbl` without rebuilding UCSC FASTA, GTF, chromsizes or genome annotation files.
@@ -166,15 +166,15 @@ source "$PROJECT_DIR/project_env.sh"
 Use `--mode check` to check existing resources without rebuilding. Use `--mode status` to print and log a resource status summary.
 
 ```bash
-python $SCENICPLUS_HOME/scripts/prepare_official_resources.py --mode check
+spgrn-prepare-official-resources --mode check
 
-python $SCENICPLUS_HOME/scripts/prepare_official_resources.py --mode status
+spgrn-prepare-official-resources --mode status
 ```
 
 Prepare all supported organisms only when building a reusable shared resource cache. In `--organism all` mode, the script prepares organism resource caches but keeps the project organism selected in Step 0 as the active analysis organism.
 
 ```bash
-python $SCENICPLUS_HOME/scripts/prepare_official_resources.py \
+spgrn-prepare-official-resources \
   --organism all \
   --mode prepare
 ```
@@ -204,26 +204,18 @@ First inspect the annotated object. This object should already contain the cells
 The unified inspector detects the file format from the suffix (`.rds`, `.qs`, or `.h5ad`), then detects candidate sample, condition, label, barcode, RNA assay, raw-count layer and metacell embedding fields where available.
 
 ```bash
-python $SCENICPLUS_HOME/scripts/inspect_annotated_object.py
+spgrn-inspect-annotated-object
 ```
 
 Inspect the active analysis object before choosing `CELL_LABEL_COLUMN`.
 
-Review the report and the generated parameter table:
+Review the report and generated parameter table with one command:
 
 ```bash
-cat "$PROJECT_DIR/results/annotated_object/annotated_object_inspection_report.md"
-if [[ -f "$PROJECT_DIR/inputs/annotated_object_params.tsv" ]]; then
-  cat "$PROJECT_DIR/inputs/annotated_object_params.tsv"
-elif [[ -f "$PROJECT_DIR/inputs/annotated_h5ad_params.tsv" ]]; then
-  cat "$PROJECT_DIR/inputs/annotated_h5ad_params.tsv"
-else
-  echo "Missing annotated_object params file" >&2
-  exit 1
-fi
+spgrn-review-annotated-object-inspection
 ```
 
-Additional previews are written under `results/annotated_object/`.
+The review writes `results/annotated_object/annotated_object_pre_export_review.md` and `.tsv`, then fails if required export fields are missing.
 
 Confirm `cell_label_column`, `assay`, `layer` and `reduction`. `cell_label_column` is the user-facing grouping choice for this step. During export, this source column is written into `inputs/cell_metadata.tsv` as the fixed downstream column `cell_label`. The other fields are detected from the object and recorded because downstream scripts need them: `assay` and `layer` define the RNA count matrix exported from the annotated object to `inputs/gex.h5ad`; sample and condition columns define biological grouping; barcode fields connect the annotated object to ATAC fragments; `reduction` becomes the coordinate system for Step 3 metacell aggregation.
 
@@ -234,13 +226,13 @@ If any detected field is wrong, edit the generated parameter table before export
 If `CELL_LABEL_COLUMN` is not the intended grouping, pass the correct field at export time:
 
 ```bash
-python $SCENICPLUS_HOME/scripts/export_annotated_object.py --cell-label-column corrected_metadata_column
+spgrn-export-annotated-object --cell-label-column corrected_metadata_column
 ```
 
 Export the active RNA and metadata:
 
 ```bash
-python $SCENICPLUS_HOME/scripts/export_annotated_object.py
+spgrn-export-annotated-object
 ```
 
 Export keeps all cells in the provided active object. For a selected-population analysis, provide the selected, reprocessed object as `ANNOTATED_OBJECT`; do not subset a whole-atlas object at this step.
@@ -266,13 +258,13 @@ Review `inputs/grn_label_summary.tsv` before running pycisTopic.
 Create or update the workflow parameter tables used by the following steps:
 
 ```bash
-python $SCENICPLUS_HOME/scripts/setup_workflow_params.py
+spgrn-setup-workflow-params
 ```
 
 The script writes default project parameter tables under `inputs/` and records their paths in `$PROJECT_DIR/scenicplus_project.env`. Existing scalar parameter values are kept unless `--force` is used. Sample-specific tables are refreshed when their `sample_id` values no longer match the active sample sheet. To change a value, either edit the corresponding `inputs/*_params.tsv` file or use a command-line override:
 
 ```bash
-python $SCENICPLUS_HOME/scripts/setup_workflow_params.py \
+spgrn-setup-workflow-params \
   --section pycistopic \
   --set pycistopic.n_iter=300
 ```
@@ -286,9 +278,9 @@ The installed metacell implementation uses hdWGCNA and requires a Seurat RDS/QS 
 Step 3 initializes `assay`, `layer` and `reduction` from Step 2. For matched multiome analyses, use a WNN UMAP computed for the active analysis cells. Use RNA UMAP only when the ATAC modality is unavailable or deliberately excluded.
 
 ```bash
-python $SCENICPLUS_HOME/scripts/setup_workflow_params.py --section metacell
-Rscript $SCENICPLUS_HOME/scripts/prepare_metacell_inputs_from_seurat.R
-python $SCENICPLUS_HOME/scripts/make_metacell_gex_h5ad.py
+spgrn-setup-workflow-params --section metacell
+spgrn-prepare-metacell-inputs-from-seurat
+spgrn-make-metacell-gex-h5ad
 ```
 
 Metacell aggregation is required in this workflow before pycisTopic and SCENIC+.
@@ -303,7 +295,7 @@ inputs/metacell_params.tsv
 To change them, edit that file or rerun the setup script with `--set`, for example:
 
 ```bash
-python $SCENICPLUS_HOME/scripts/setup_workflow_params.py \
+spgrn-setup-workflow-params \
   --section metacell \
   --set metacell.k=12 \
   --set metacell.max_shared=2
@@ -324,14 +316,14 @@ Create `$PROJECT_DIR/inputs/sample_sheet.tsv` from the ATAC file layout selected
 If `ATAC_INPUT_LAYOUT` and `ATAC_DATA_ROOT` were set in Step 0, register them with:
 
 ```bash
-python $SCENICPLUS_HOME/scripts/set_atac_input_params.py
+spgrn-set-atac-input-params
 ```
 
 Then generate and validate the active ATAC sample sheet:
 
 ```bash
-python $SCENICPLUS_HOME/scripts/make_sample_sheet_from_atac_inputs.py
-python $SCENICPLUS_HOME/scripts/validate_and_prepare_sample_sheet.py
+spgrn-make-sample-sheet-from-atac-inputs
+spgrn-validate-and-prepare-sample-sheet
 ```
 
 `make_sample_sheet_from_atac_inputs.py` dispatches layout parsing based on `inputs/atac_input_params.tsv` produced in the previous command.
@@ -348,19 +340,19 @@ Review the `condition` column before continuing.
 Run one command to standardize ATAC peaks and fragments, create a tabix index for each standardized fragment file, and update the active sample sheet to point to the standardized inputs:
 
 ```bash
-python $SCENICPLUS_HOME/scripts/standardize_atac_inputs.py
+spgrn-standardize-atac-inputs
 ```
 
 Reassign the standardized single-cell fragments to the metacell barcodes produced in Step 3:
 
 ```bash
-python $SCENICPLUS_HOME/scripts/reassign_fragments_to_metacells.py
+spgrn-reassign-fragments-to-metacells
 ```
 
 Validate the updated active sample sheet after fragment reassignment:
 
 ```bash
-python $SCENICPLUS_HOME/scripts/validate_and_prepare_sample_sheet.py
+spgrn-validate-and-prepare-sample-sheet
 ```
 
 ## 5. Create `inputs/cistopic_obj.pkl` With pycisTopic
@@ -369,12 +361,12 @@ Build the ATAC object from UCSC-standard fragments and a project-specific consen
 
 `cistopic_obj.pkl`, consensus peaks, topic region sets and DAR region sets are specific to the active cells or metacells and active `cell_label` grouping. If the analysis changes from whole atlas to a selected population, or from cells to metacells, rebuild this step from the selected barcodes and original fragments. Subsetting an old whole-atlas cisTopic object is only appropriate for inspecting or plotting the already inferred atlas-level model.
 
-Create or update QC, peak-calling, DAR, doublet and topic-model parameter files. The `chromsizes` and `genome_size` values come from the public resources prepared for `ORGANISM`; sample-level QC rows are generated from the active `inputs/sample_sheet.tsv`.
+Create or update QC, peak-calling, DAR and topic-model parameter files. The `chromsizes` and `genome_size` values come from the public resources prepared for `ORGANISM`; sample-level QC rows are generated from the active `inputs/sample_sheet.tsv`.
 
 The pycisTopic pseudobulk step can be slow and memory-heavy. Keep `resume_pseudobulk=1` unless there is a reason to rebuild all pseudobulk BED files from scratch. On rerun, the workflow reuses existing non-empty gzip-valid BED files and rebuilds only missing or corrupted label files. A run interrupted during gzip writing may leave a partial `.bed.gz`; the workflow tests gzip integrity before reuse.
 
 ```bash
-python $SCENICPLUS_HOME/scripts/setup_workflow_params.py --section pycistopic
+spgrn-setup-workflow-params --section pycistopic
 ```
 
 This writes or updates:
@@ -388,81 +380,42 @@ inputs/pycistopic_params.tsv
 To change the topic grid or pycisTopic parameters, use explicit overrides:
 
 ```bash
-python $SCENICPLUS_HOME/scripts/setup_workflow_params.py \
+spgrn-setup-workflow-params \
   --section pycistopic \
   --set topic_grid.n_topics=10,20,30 \
   --set pycistopic.n_iter=300
 ```
 
-The default topic-model backend is `cgs`, which is dependency-light and fully contained in pycisTopic. For large peak-by-cell/metacell matrices, use the pycisTopic MALLET backend as an explicit backend choice.
+The default topic-model backend is MALLET, because it is faster and more stable for large peak-by-cell/metacell matrices. The workflow records the active MALLET runtime in `results/pycistopic/model_selection/mallet_runtime.tsv`.
 
-```bash
-python $SCENICPLUS_HOME/scripts/setup_workflow_params.py \
-  --section pycistopic \
-  --set pycistopic.lda_backend=mallet \
-  --set pycistopic.mallet_path="$CONDA_ENV_PREFIX/bin/mallet" \
-  --set pycistopic.mallet_memory_gb=auto
-```
-
-If MALLET is used, keep all topic models from the same backend. Archive or remove interrupted CGS `Topic*.pkl` files before rerunning with MALLET. `mallet_memory_gb=auto` detects available memory and sets Java heap through `MALLET_MEMORY`. The workflow records the active MALLET runtime in `results/pycistopic/model_selection/mallet_runtime.tsv`.
-
-`topic_n_cpu=auto` is resolved separately from pseudobulk and MACS2 workers. Set an explicit value, for example `3`, when MALLET topic modeling is CPU-bound and memory is stable.
+If switching between CGS and MALLET, keep all topic models from the same backend. Archive or remove interrupted `Topic*.pkl` files before rerunning topic modeling.
 
 Because Step 3 produces metacell inputs, the default `analysis_unit` is `metacell`. Set `pycistopic.analysis_unit=cell` only for a cell-level run.
 
 Run:
 
 ```bash
-python $SCENICPLUS_HOME/scripts/run_pycistopic_workflow.py 2>&1 | tee "$PROJECT_DIR/logs/run_pycistopic_workflow.log"
-```
-
-Inspect the automatic worker plan and pseudobulk resume plan:
-
-```bash
-cat results/pycistopic/qc/parallelism_plan.tsv
-cat results/pycistopic/qc/pseudobulk_resume_plan.tsv
+spgrn-run-pycistopic-workflow 2>&1 | tee "$PROJECT_DIR/logs/run_pycistopic_workflow.log"
 ```
 
 If a pseudobulk run was interrupted, validate existing pseudobulk files before continuing. Remove only files reported as invalid; valid files will be reused.
 
 ```bash
-python $SCENICPLUS_HOME/scripts/validate_pseudobulk_files.py
+spgrn-validate-pseudobulk-files
 ```
 
-The workflow is complete only when these outputs exist (all are required for SCENIC+):
+Check that pycisTopic produced all files required by SCENIC+:
 
-```text
-inputs/cistopic_obj.pkl
-work/pycistopic/consensus_peaks.bed
-inputs/region_sets/Topics_otsu/*.bed
-inputs/region_sets/Topics_top_3k/*.bed
-inputs/region_sets/DARs_cell_label/*.bed
-results/pycistopic/consensus_peaks.tsv
-results/pycistopic/qc/cell_qc_metrics.tsv
-results/pycistopic/qc/cistopic_cell_qc.pdf
-results/pycistopic/qc/consensus_peak_qc.pdf
-results/pycistopic/qc/atac_doublets.tsv
-results/pycistopic/qc/atac_doublet_diagnostics.pdf
-results/pycistopic/qc/cells_by_sample_and_label.tsv
-results/pycistopic/qc/parallelism_plan.tsv
-results/pycistopic/qc/pseudobulk_resume_plan.tsv
-results/pycistopic/dar/*.tsv
-results/pycistopic/dar/dar_summary.pdf
-results/pycistopic/model_selection/topic_model_metrics.tsv
-results/pycistopic/model_selection/topic_model_metrics.pdf
-results/pycistopic/model_selection/topic_qc_metrics.tsv
-results/pycistopic/model_selection/topic_qc_metrics.pdf
-results/pycistopic/model_selection/topic_otsu_thresholds.pdf
-results/pycistopic/model_selection/topic_region_set_summary.tsv
-results/pycistopic/model_selection/topic_region_set_summary.pdf
-results/pycistopic/model_selection/selected_model.txt
-results/pycistopic/pycistopic_manifest.json
+```bash
+spgrn-check-pycistopic-completion
 ```
+
+The check writes `results/pycistopic/qc/pycistopic_completion_check.md` and `.tsv`, then fails if any required output is missing or empty.
 
 Check that the cisTopic object and active RNA matrix use matching cell IDs:
 
 ```bash
-python $SCENICPLUS_HOME/scripts/check_cistopic_cell_names.py
+spgrn-check-cistopic-cell-names
 ```
 
 ## 6. Create `inputs/region_sets/`
@@ -479,7 +432,7 @@ inputs/region_sets/
 Validate and standardize all region-set BED files:
 
 ```bash
-python $SCENICPLUS_HOME/scripts/standardize_region_sets.py
+spgrn-standardize-region-sets
 ```
 
 The script writes:
@@ -493,8 +446,8 @@ results/pycistopic/qc/region_set_standardization.tsv
 The custom cisTarget database must be built from the same UCSC-standard consensus region universe used by pycisTopic and region sets. Create or update the cisTarget database parameters, then build the database. This step is required for final SCENIC+ inference:
 
 ```bash
-python $SCENICPLUS_HOME/scripts/setup_workflow_params.py --section cistarget
-python $SCENICPLUS_HOME/scripts/build_custom_cistarget_db.py
+spgrn-setup-workflow-params --section cistarget
+spgrn-build-custom-cistarget-db
 ```
 
 Parameters are stored in:
@@ -503,24 +456,18 @@ Parameters are stored in:
 inputs/cistarget_db_params.tsv
 ```
 
-For large region universes, keep `n_cpu=auto` unless a scheduler requires a fixed
-thread count. At launch time, `build_custom_cistarget_db.py` inspects CPU count,
-current load and available memory, then resolves a conservative worker count for
-`create_cistarget_motif_databases.py -t`. The resolved plan is written before
-the long motif-scanning step starts:
+The script manages resource use and resumable execution. The resolved plan is
+written before the long motif-scanning step starts:
 
 ```text
 results/cistarget_db/custom_cistarget_resource_plan.tsv
 ```
 
-For large region-by-motif matrices, `use_partial=auto` enables the official
-partial cisTarget workflow automatically. The wrapper runs
-`create_cistarget_motif_databases.py --partial`, skips existing non-empty part
-files on rerun, combines partial score databases with the official combine
-script, then converts motif-vs-region scores to the final
-regions-vs-motifs rankings database with the official conversion script. The
-resource plan records `use_partial`, `partial_n_parts` and the estimated full
-float32 score matrix size.
+For large region-by-motif matrices, the wrapper uses the official partial
+cisTarget workflow. It runs `create_cistarget_motif_databases.py --partial`,
+skips existing non-empty part files on rerun, combines partial score databases
+with the official combine script, then converts motif-vs-region scores to the
+final regions-vs-motifs rankings database with the official conversion script.
 
 Long Cluster-Buster scans may not print motif-level progress until one or more
 workers return. The wrapper writes a lightweight heartbeat while the official
@@ -528,11 +475,8 @@ script is still running. The interval is controlled by `heartbeat_seconds` in
 `inputs/cistarget_db_params.tsv` and defaults to 600 seconds. Set it higher for
 quiet server logs or lower when actively debugging.
 
-Partial jobs are run sequentially by default. This is intentional: each
-official partial run still initializes a large region-by-motif score structure,
-so launching multiple partials in parallel can duplicate memory pressure. To use
-spare CPU safely, keep one active partial and let `n_cpu=auto` increase the
-`cbust` worker count within that partial.
+Partial jobs are run sequentially by default to avoid duplicating the large
+region-by-motif score structure across concurrent partial processes.
 
 Expected:
 
@@ -547,7 +491,7 @@ results/cistarget_db/custom_cistarget_db_manifest.tsv
 SCENIC+ is run on all active metacells together to build one shared eRegulon universe. If the project contains multiple conditions, keep them together at this step; condition-specific effects are tested later on the shared eRegulon AUC matrix.
 
 ```bash
-python $SCENICPLUS_HOME/scripts/initialize_scenicplus_snakemake.py
+spgrn-initialize-scenicplus-snakemake
 ```
 
 This initializes the SCENIC+ Snakemake directory, copies the organism-specific annotation files, writes `work/scenicplus/organism_config.yaml`, creates or updates `inputs/scenicplus_config_params.tsv`, and generates the final Snakemake config:
@@ -556,15 +500,10 @@ This initializes the SCENIC+ Snakemake directory, copies the organism-specific a
 $PROJECT_DIR/work/scenicplus/Snakemake/config/config.yaml
 ```
 
-Important parameters to review:
+Parameters usually worth reviewing:
 
 ```text
-n_cpu                     CPU threads used by SCENIC+.
 seed                      Reproducibility seed.
-nr_cells_per_metacells    Used by SCENIC+ for non-multiome linkage. In this
-                          workflow `is_multiome` stays true because RNA and
-                          ATAC cell IDs are matched; precomputed metacell IDs
-                          from Step 3 are treated as the matched units.
 search_space_upstream     Gene search-space upstream window.
 search_space_downstream   Gene search-space downstream window.
 search_space_extend_tss   TSS extension window.
@@ -573,6 +512,42 @@ ctx_nes_threshold         cisTarget NES threshold; keep 3.0 unless justified.
 rho_threshold             Region-gene correlation threshold.
 min_target_genes          Minimum target genes retained per eRegulon.
 ```
+
+Very large ranking and score databases can still make a single motif-enrichment
+process retain too much memory while it iterates over DARs and topic-derived
+region sets. In that case, run motif enrichment as independent region-set-family
+chunks before the formal Snakemake run:
+
+```bash
+spgrn-run-scenicplus-motif-enrichment-split --mode both
+```
+
+This command creates `inputs/region_sets_split/`, runs DEM and cisTarget on each
+region-set family as separate SCENIC+ processes, then calls `prepare_menr` with
+all resulting HDF5 files. It writes a resource plan and chunk manifest here:
+
+```text
+work/scenicplus/motif_enrichment_split/motif_enrichment_split_resource_plan.tsv
+work/scenicplus/motif_enrichment_split/motif_enrichment_split_chunks.tsv
+```
+
+The command is resumable: completed non-empty chunk HDF5 files are skipped unless
+`--force` is used.
+
+If a DEM chunk completes but produces no HDF5 under the configured thresholds,
+the runner records an `.empty.tsv` marker, automatically launches a relaxed-threshold
+diagnostic for that chunk, and continues with downstream processing when any non-empty
+DEM/CTX HDF5 exists.
+
+The diagnostic output is written to:
+
+```text
+work/scenicplus/motif_enrichment_split/ (chunk-relaxed DEM outputs and logs)
+results/scenicplus_diagnostics/*_relaxed_threshold_diagnostic.tsv/md
+```
+
+If all DEM chunks are empty (i.e., no formal-threshold DEM HDF5 is generated),
+the workflow stops with a hard error and points to the full diagnostic reports.
 
 If these values need to change, edit `$PROJECT_DIR/inputs/scenicplus_config_params.tsv` or rerun the setup script with `--set`, then rerun the generator. If paths or advanced SCENIC+ options need to change, edit the generated file:
 
@@ -590,8 +565,8 @@ If Step 9 fails, do not run Step 10.
 Run all checks before the Snakemake dry run. These checks should fail loudly but use project-configurable thresholds.
 
 ```bash
-python $SCENICPLUS_HOME/scripts/setup_workflow_params.py --section preflight
-python $SCENICPLUS_HOME/scripts/preflight_scenicplus_inputs.py 2>&1 | tee "$PROJECT_DIR/logs/preflight_scenicplus_inputs.log"
+spgrn-setup-workflow-params --section preflight
+spgrn-preflight-scenicplus-inputs 2>&1 | tee "$PROJECT_DIR/logs/preflight_scenicplus_inputs.log"
 ```
 
 The thresholds are recorded in `inputs/preflight_thresholds.tsv` and can be adjusted if your data are noisy, without changing output names.
@@ -600,27 +575,23 @@ The thresholds are recorded in `inputs/preflight_thresholds.tsv` and can be adju
 Record software versions and resource checksums:
 
 ```bash
-python $SCENICPLUS_HOME/scripts/record_scenicplus_provenance.py
+spgrn-record-scenicplus-provenance
 ```
 
 ## 10. Dry Run, Run, And Stability Record
 
 ```bash
-python $SCENICPLUS_HOME/scripts/setup_workflow_params.py --section snakemake
-python $SCENICPLUS_HOME/scripts/run_scenicplus_snakemake.py --mode dryrun
+spgrn-setup-workflow-params --section snakemake
+spgrn-run-scenicplus-snakemake --mode dryrun
 ```
 
 ```bash
-python $SCENICPLUS_HOME/scripts/run_scenicplus_snakemake.py --mode run
+spgrn-run-scenicplus-snakemake --mode run
 ```
 
-Run parameters are stored in:
+Key parameter file: `inputs/snakemake_params.tsv`.
 
-```text
-inputs/snakemake_params.tsv
-```
-
-Expected outputs:
+Main outputs:
 
 ```text
 results/scenicplus/eRegulons_direct.tsv
@@ -630,131 +601,123 @@ results/scenicplus/AUCell_extended.h5mu
 results/scenicplus/scplus_mdata.h5mu
 ```
 
-For formal analyses, run at least two independent SCENIC+ executions or one standard execution plus a deterministic patched execution, then compare the high-confidence edges. Copy each completed result directory before starting the next run:
+For formal analyses, keep two independent inference records to assess high-confidence edge stability. Archive the first completed run:
 
 ```bash
-mkdir -p results/scenicplus_stability/run1 results/scenicplus_stability/run2
+mkdir -p results/scenicplus_stability/run1
 cp results/scenicplus/eRegulons_direct.tsv results/scenicplus_stability/run1/
 cp results/scenicplus/eRegulons_extended.tsv results/scenicplus_stability/run1/
 cp work/scenicplus/region_to_gene_adj.tsv results/scenicplus_stability/run1/
+```
 
-# After changing output paths, seed, or using a duplicated project directory for run2:
+Second independent inference:
+
+```bash
+spgrn-run-scenicplus-snakemake --mode dryrun --rerun-inference
+spgrn-run-scenicplus-snakemake --mode run --rerun-inference
+```
+
+`--rerun-inference` reruns the SCENIC+ inference chain without rebuilding genome resources. Archive the second completed run:
+
+```bash
+mkdir -p results/scenicplus_stability/run2
 cp results/scenicplus/eRegulons_direct.tsv results/scenicplus_stability/run2/
 cp results/scenicplus/eRegulons_extended.tsv results/scenicplus_stability/run2/
 cp work/scenicplus/region_to_gene_adj.tsv results/scenicplus_stability/run2/
 ```
 
-Run:
+Compare edge stability:
 
 ```bash
-python $SCENICPLUS_HOME/scripts/compare_scenicplus_stability.py \
+spgrn-compare-scenicplus-stability \
   --run-a results/scenicplus_stability/run1 \
   --run-b results/scenicplus_stability/run2 \
   --out results/scenicplus_stability/stability_summary.tsv
 ```
 
-The global SCENIC+ seed controls part of the workflow, but region-to-gene GBM can still be sensitive to implementation details and dependency versions. Report the stability summary with the final GRN results.
+Report `results/scenicplus_stability/stability_summary.tsv` with the final GRN results.
 
-## 11. Condition-Level eRegulon AUC Statistics
+## 11. SCENIC+ Postprocess Figures And Condition Statistics
 
-Run differential eRegulon activity testing at the sample level on the shared eRegulon universe from Step 10. Do not compare separately inferred condition-specific eRegulon lists as the primary analysis. This script reads the SCENIC+ AUCell `.h5mu`, joins `inputs/cell_metadata.tsv`, averages AUC per sample, and tests condition differences across sample-level means. It always writes the statistical table and a PDF diagnostic page.
+After Step 10, run postprocessing as one ordered block. This stage converts the shared SCENIC+ eRegulon universe into source tables, vector PDFs, an output-tier audit and sample-level condition statistics. Keep the inference step and the condition test conceptually separate: SCENIC+ is inferred once on all active metacells, then eRegulon AUCell activity is compared across biological samples and conditions.
 
-Create or update the postprocessing parameters, then run for direct and extended eRegulons:
-
-```bash
-python $SCENICPLUS_HOME/scripts/setup_workflow_params.py --section postprocess
-python $SCENICPLUS_HOME/scripts/run_scenicplus_postprocess.py --task stats --layer all
-```
-
-Required outputs:
-
-```text
-results/scenicplus_stats/auc_by_condition_direct/sample_mean_auc.tsv
-results/scenicplus_stats/auc_by_condition_direct/condition_eregulon_auc_statistics.tsv
-results/scenicplus_stats/auc_by_condition_direct/condition_eregulon_auc_statistics.pdf
-results/scenicplus_stats/auc_by_condition_extended/sample_mean_auc.tsv
-results/scenicplus_stats/auc_by_condition_extended/condition_eregulon_auc_statistics.tsv
-results/scenicplus_stats/auc_by_condition_extended/condition_eregulon_auc_statistics.pdf
-```
-
-Report `delta_mean_auc` and FDR only when there are enough independent samples. If a condition has fewer than two samples, keep the sample-mean table and PDF, but do not interpret per-cell P values as biological replication.
-
-## 12. SCENIC+ Result Figures
-
-A complete SCENIC+ analysis should not stop at tables, but the figures should be organized by scientific evidence layer rather than by plotting convenience. First audit which evidence layers are ready:
+11.1-Create or update postprocessing parameters:
 
 ```bash
-python $SCENICPLUS_HOME/scripts/run_scenicplus_postprocess.py --task audit
+spgrn-setup-workflow-params --section postprocess
 ```
 
-The audit writes:
-
-```text
-results/scenicplus_output_tiers/scenicplus_output_tier_audit.tsv
-results/scenicplus_output_tiers/scenicplus_output_tier_audit.pdf
-```
-
-Scientific output tiers:
-
-```text
-0. input/QC confidence: active RNA/ATAC cells, metadata, fragments, doublet and ATAC QC
-1. chromatin topics: major accessibility states and topic model quality
-2. region sets and DARs: topic-region programs and differential accessible regions
-3. motif/cisTarget evidence: project-specific motif enrichment database and motif2TF mapping
-4. eRegulon activity: TF-region-gene eRegulons and cell-state activity patterns
-5. condition effects: sample-level differential eRegulon activity across conditions
-6. mechanism views: focused TF-target networks and locus/coverage views when the required inputs exist
-```
-
-After the audit, generate the standard eRegulon figure set for each direct and extended eRegulon layer. The installer provides `plot_scenicplus_publication_outputs.py`, which writes vector PDFs and source data tables for:
-
-```text
-1. eRegulon AUC heatmap across cell states or labels
-2. RSS-style eRegulon specificity heatmap
-3. heatmap-dotplot: color = group AUC z-score, size = active-cell fraction
-4. UMAP overlays for high-priority eRegulons
-5. compact TF-target network view
-```
-
-The visual style is intentionally clean and journal-ready: white background, Arial/Helvetica fonts, low-saturation colors, small but readable labels, no heavy grid, and all panels exported as PDF. Each figure has a matching source table.
-
-Run direct and extended eRegulon figure generation:
+11.2-Generate the output-tier audit, all standard PDFs, source tables and condition statistics:
 
 ```bash
-python $SCENICPLUS_HOME/scripts/setup_workflow_params.py --section postprocess
-python $SCENICPLUS_HOME/scripts/run_scenicplus_postprocess.py --task figures --layer all
+spgrn-run-scenicplus-postprocess --task all --layer all
 ```
 
-Postprocessing parameters are stored in:
+Step 11 is kept as one postprocess stage because the audit, figure source tables, PDFs and condition statistics all describe the same completed SCENIC+ inference result.
+
+Postprocess command options:
 
 ```text
-inputs/postprocess_params.tsv
+--task audit    Output-tier audit only.
+--task figures  Regenerate source tables and 01-08 eRegulon PDFs.
+--task stats    Regenerate 09+ condition-statistics tables and PDFs.
+--task all      Generate the complete postprocess output set.
+
+--layer direct    Use direct eRegulons only.
+--layer extended  Use extended eRegulons only.
+--layer all       Run both direct and extended eRegulons.
 ```
 
-Required outputs for each layer:
+`--task` controls the analysis block and `--layer` controls the eRegulon layer. The installed wrapper does not target a single named PDF; rerun the relevant task/layer, or edit the source table and custom-draw a focused manuscript panel separately.
+
+Main output locations:
 
 ```text
-results/scenicplus_figures/<direct_or_extended>/eregulon_auc_heatmap.pdf
-results/scenicplus_figures/<direct_or_extended>/eregulon_specificity_heatmap.pdf
-results/scenicplus_figures/<direct_or_extended>/eregulon_dot_heatmap.pdf
-results/scenicplus_figures/<direct_or_extended>/eregulon_auc_umap.pdf
-results/scenicplus_figures/<direct_or_extended>/tf_target_network.pdf
-results/scenicplus_figures/<direct_or_extended>/source_auc_mean_by_group.tsv
-results/scenicplus_figures/<direct_or_extended>/source_auc_heatmap_zscore.tsv
-results/scenicplus_figures/<direct_or_extended>/source_rss_specificity.tsv
-results/scenicplus_figures/<direct_or_extended>/source_dot_heatmap.tsv
-results/scenicplus_figures/<direct_or_extended>/source_tf_target_network_edges.tsv
-results/scenicplus_figures/<direct_or_extended>/source_selected_top_eregulons.tsv
+results/scenicplus_output_tiers/       Output-tier audit TSV/PDF for checking which result families are interpretable.
+results/scenicplus_figures/01-05_*     eRegulon activity, specificity, dot heatmap and embedding PDFs.
+results/scenicplus_figures/06-08_*     Region-gene, target-region overlap and TF-target network PDFs.
+results/scenicplus_figures/09-15_*     Sample-level condition statistics PDFs.
+results/scenicplus_figures/source_*    Figure source tables for custom manuscript redraws.
+results/scenicplus_figures/*stats*.tsv Condition-statistics source tables with the resolved contrast direction.
+logs/                                  Postprocess logs for each extraction, R render and condition-statistics step.
+```
+
+R plotting style is controlled by:
+
+```text
+results/scenicplus_figures/plot_style_parameters.tsv
+results/scenicplus_figures/plot_style_parameters.md
+```
+
+`plot_style_parameters.tsv` is the editable file. It contains only `parameter` and `value`, so it can be reused across projects without project-specific labels. The Markdown file is generated with the parameter dictionary and the one-command redraw instruction. After editing colors, font sizes, line widths, point sizes, alpha values or panel layout values, rerun 11.2 to redraw all PDFs.
+
+Optional priority labels for condition volcano plots can be supplied through `priority_eregulons` in `inputs/postprocess_params.tsv`. Use a TSV with `eregulon` or `display_label`; `cell_label` and `layer` columns are respected when present.
+
+Condition statistics are automatic. One condition gives descriptive sample means only; two conditions report `delta_mean_auc` as comparison minus reference and record the resolved direction in `contrast`; more than two conditions use an omnibus sample-level test without a single delta. Set `reference_condition` or `comparison_condition` in `inputs/postprocess_params.tsv` only when the automatic two-condition reference is not the intended baseline.
+
+Scientific output layers:
+
+```text
+0. Output-tier audit and input confidence: verifies which SCENIC+ outputs are present and which output families can be interpreted.
+1. eRegulon activity and specificity: heatmap/dot/embedding views for cell-state regulatory programs.
+2. Condition-resolved eRegulon activity: the same eRegulon universe split by cell label and condition.
+3. Region-gene and target-region structure: model-level enhancer-target and region-overlap summaries.
+4. TF-target network overview: compact network view for selected TF-target links.
+5. Sample-level condition statistics: condition effects from biological-sample mean AUCell scores.
 ```
 
 Interpretation rules:
 
 ```text
-AUC heatmap: use for group-level eRegulon activity patterns.
-Specificity heatmap: use for prioritizing cell-state-specific eRegulons.
+AUC heatmap: use for group-level eRegulon activity patterns; rows and columns are clustered from the plotted numeric matrix.
+Condition AUC heatmap: compare condition shifts within each cell label; columns are ordered as cell_label_condition and rows are clustered.
+Specificity heatmap: use for prioritizing cell-state-specific eRegulons; rows and columns are clustered from the plotted numeric matrix.
 Dot heatmap: color encodes relative AUC; dot size encodes the fraction of active cells.
-UMAP overlay: use for localization of selected eRegulons, not as the only statistical evidence.
-Network PDF: use as a compact overview; use the source edge TSV for final custom network layouts.
+UMAP/activity embedding: use for localization and state separation, not as standalone statistical evidence.
+Region-gene and overlap PDFs: model-level structural views; interpret condition effects from AUCell statistics, not from these structural plots alone.
+Network PDF: use as a compact overview; use source edge tables for final focused network panels.
+Condition volcano and condition heatmap: interpret sample-level effect size first; report FDR only when there are enough independent biological samples.
+eRegulon signs: labels retain SCENIC+ signs such as +/+, -/+ and -/-. Do not collapse these into TF RNA expression; eRegulon AUC is target gene-set activity.
 ```
 
 For a main figure, redraw selected eRegulons from the source tables rather than showing every detected regulon. Keep direct and extended eRegulons separated unless the figure explicitly states how they were merged.

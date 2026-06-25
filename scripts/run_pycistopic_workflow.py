@@ -20,7 +20,7 @@ if any(arg in {"-h", "--help"} for arg in sys.argv[1:]):
     print(
         "Usage: run_pycistopic_workflow.py\n\n"
         "Run pseudobulk peak calling, consensus peak construction, cisTopic object "
-        "creation, topic modeling, topic/DAR region set export, ATAC doublet QC "
+        "creation, topic modeling, topic/DAR region set export "
         "and required pycisTopic summary figures for the active project. Requires "
         "$PROJECT_DIR and the parameter tables created by setup_workflow_params.py."
     )
@@ -82,15 +82,6 @@ INPUTS = PROJECT / "inputs"
 WORK = PROJECT / "work" / "pycistopic"
 RESULTS = PROJECT / "results" / "pycistopic"
 LOGS = PROJECT / "logs"
-try:
-    from atac_doublet_scrublet import run_scrublet_atac_doublets
-except Exception as exc:
-    raise ImportError(
-        "Cannot import installer doublet module. Set SCENICPLUS_INSTALLER_MODULES "
-        "to the directory containing atac_doublet_scrublet.py."
-    ) from exc
-
-
 def mkdirs() -> None:
     for path in [
         WORK,
@@ -457,45 +448,6 @@ def export_consensus_peak_qc_pdf(consensus_df: pd.DataFrame) -> None:
     require_nonempty_pdf(pdf_path)
 
 
-def export_doublet_calls(cistopic_obj, params: Mapping[str, str]) -> None:
-    if params.get("analysis_unit", "cell").strip().lower() == "metacell":
-        table = pd.DataFrame(
-            {
-                "cell_id": cistopic_obj.cell_names,
-                "doublet_score": np.nan,
-                "predicted_doublet": False,
-                "doublet_qc_status": "not_applicable_to_metacells",
-            }
-        )
-        table.to_csv(RESULTS / "qc" / "atac_doublets.tsv", sep="\t", index=False)
-        pdf_path = RESULTS / "qc" / "atac_doublet_diagnostics.pdf"
-        with PdfPages(pdf_path) as pdf:
-            fig, ax = plt.subplots(figsize=(5.5, 2.7))
-            ax.text(
-                0.5,
-                0.5,
-                "ATAC doublet detection is recorded at the single-cell QC stage before metacell aggregation.",
-                ha="center",
-                va="center",
-                wrap=True,
-            )
-            ax.axis("off")
-            fig.tight_layout()
-            pdf.savefig(fig)
-            plt.close(fig)
-        require_nonempty_pdf(pdf_path)
-        return
-    doublets = run_scrublet_atac_doublets(
-        count_matrix=cistopic_obj.fragment_matrix.T.tocsc(),
-        cell_names=cistopic_obj.cell_names,
-        cell_metadata=cistopic_obj.cell_data,
-        params=params,
-        out_tsv=RESULTS / "qc" / "atac_doublets.tsv",
-        out_pdf=RESULTS / "qc" / "atac_doublet_diagnostics.pdf",
-    )
-    cistopic_obj.add_cell_data(doublets.loc[:, ["doublet_score", "predicted_doublet"]], split_pattern="-")
-
-
 def export_topic_qc_pdf(cistopic_obj) -> None:
     from pycisTopic.topic_qc import compute_topic_metrics
 
@@ -754,7 +706,6 @@ def build_cistopic_object(
     qc["pass_atac_qc"] = qc["pass_cistopic_fragment_threshold"] & qc["pass_cistopic_accessible_region_threshold"]
     qc.to_csv(RESULTS / "qc" / "cell_qc_metrics.tsv", sep="\t", index=False)
     export_cell_qc_pdf(qc)
-    export_doublet_calls(cistopic_obj, params)
 
     with open(WORK / "cistopic_obj_pre_models.pkl", "wb") as handle:
         pickle.dump(cistopic_obj, handle)
@@ -980,8 +931,6 @@ def write_manifest(
             "results/pycistopic/qc/cell_qc_metrics.tsv",
             "results/pycistopic/qc/cistopic_cell_qc.pdf",
             "results/pycistopic/qc/consensus_peak_qc.pdf",
-            "results/pycistopic/qc/atac_doublets.tsv",
-            "results/pycistopic/qc/atac_doublet_diagnostics.pdf",
             "results/pycistopic/dar/dar_summary.tsv",
             "results/pycistopic/dar/dar_summary.pdf",
             "results/pycistopic/model_selection/topic_model_metrics.tsv",
@@ -1004,8 +953,6 @@ def final_checks() -> None:
         RESULTS / "qc" / "cell_qc_metrics.tsv",
         RESULTS / "qc" / "cistopic_cell_qc.pdf",
         RESULTS / "qc" / "consensus_peak_qc.pdf",
-        RESULTS / "qc" / "atac_doublets.tsv",
-        RESULTS / "qc" / "atac_doublet_diagnostics.pdf",
         RESULTS / "dar" / "dar_summary.tsv",
         RESULTS / "dar" / "dar_summary.pdf",
         RESULTS / "model_selection" / "topic_model_metrics.tsv",

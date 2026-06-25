@@ -217,7 +217,7 @@ def to_ucsc(chrom: str) -> str:
 
 def write_named_consensus(consensus_bed: Path, allowed_chroms: Path, out_bed: Path) -> int:
     allowed = set(allowed_chroms.read_text().splitlines())
-    rows: list[tuple[str, int, int, str]] = []
+    rows: list[tuple[str, int, int]] = []
     with consensus_bed.open() as handle:
         for line in handle:
             if not line.strip() or line.startswith("#"):
@@ -231,7 +231,7 @@ def write_named_consensus(consensus_bed: Path, allowed_chroms: Path, out_bed: Pa
             start, end = int(fields[1]), int(fields[2])
             if end <= start:
                 continue
-            rows.append((chrom, start, end, f"{chrom}:{start}-{end}"))
+            rows.append((chrom, start, end))
     rows.sort(key=lambda x: (x[0], x[1], x[2]))
     out_bed.parent.mkdir(parents=True, exist_ok=True)
     with out_bed.open("w") as out:
@@ -366,7 +366,7 @@ def main() -> None:
     resource_report["heartbeat_seconds"] = str(heartbeat_seconds)
     resource_report.update(partial_report)
     fasta.parent.mkdir(parents=True, exist_ok=True)
-    run_checked([bedtools, "getfasta", "-fi", str(genome), "-bed", str(named_bed), "-name", "-fo", str(fasta)])
+    run_checked([bedtools, "getfasta", "-fi", str(genome), "-bed", str(named_bed), "-fo", str(fasta)])
     out_prefix.parent.mkdir(parents=True, exist_ok=True)
     resource_path = pdir / "results" / "cistarget_db" / "custom_cistarget_resource_plan.tsv"
     resource_path.parent.mkdir(parents=True, exist_ok=True)

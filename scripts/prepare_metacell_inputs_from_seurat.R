@@ -1,4 +1,16 @@
 #!/usr/bin/env Rscript
+args <- commandArgs(trailingOnly = TRUE)
+if (any(args %in% c("-h", "--help"))) {
+  cat(
+    "Usage: prepare_metacell_inputs_from_seurat.R\n\n",
+    "Create metacells from an annotated Seurat object using parameters in\n",
+    "$PROJECT_DIR/inputs/metacell_params.tsv. Writes metacell metadata,\n",
+    "membership, RNA counts and summary files for downstream SCENIC+.\n",
+    sep = ""
+  )
+  quit(status = 0)
+}
+
 suppressPackageStartupMessages({
   library(Seurat)
   library(hdWGCNA)
@@ -154,6 +166,7 @@ colnames(counts) <- metacell_id
 
 source_meta <- cell_meta
 source_by_original <- split(source_meta, source_meta$original_cell_id)
+embedding_cols <- names(source_meta)[startsWith(names(source_meta), paste0(reduction, "_"))]
 membership_rows <- list()
 metacell_rows <- list()
 for (i in seq_along(old_mc_ids)) {
@@ -185,7 +198,7 @@ for (i in seq_along(old_mc_ids)) {
     stringsAsFactors = FALSE,
     check.names = FALSE
   )
-  metacell_rows[[i]] <- data.frame(
+  metacell_row <- data.frame(
     cell_id = metacell_id[[i]],
     barcode = metacell_barcode[[i]],
     sample_id = sample_values[[1]],
@@ -197,6 +210,12 @@ for (i in seq_along(old_mc_ids)) {
     stringsAsFactors = FALSE,
     check.names = FALSE
   )
+  if (length(embedding_cols) >= 2) {
+    emb <- matched[, embedding_cols, drop = FALSE]
+    emb <- as.data.frame(lapply(emb, function(x) as.numeric(as.character(x))), check.names = FALSE)
+    metacell_row <- cbind(metacell_row, as.data.frame(as.list(colMeans(emb, na.rm = TRUE)), check.names = FALSE))
+  }
+  metacell_rows[[i]] <- metacell_row
 }
 membership <- do.call(rbind, membership_rows)
 metacell_meta <- do.call(rbind, metacell_rows)

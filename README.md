@@ -37,6 +37,8 @@ Installed workflow assets:
                                       Installed to $CONDA_PREFIX/share/scenicplus-grn/scripts/.
                                       Includes project parameter setup, raw-data sample-sheet generation,
                                       pycisTopic, cisTarget DB, SCENIC+ config, Snakemake and postprocessing wrappers.
+  $CONDA_PREFIX/bin/spgrn-*  User-facing short command wrappers generated during installation.
+                                      These wrappers call the scripts under share/ with the environment Python/Rscript.
   modules/                           Required internal helper modules imported by scripts; not user-facing commands.
                                       Installed to $CONDA_PREFIX/share/scenicplus-grn/modules/.
 
@@ -62,7 +64,7 @@ bash install.sh
 The script first looks for a conda-style root. You can make this explicit:
 
 ```bash
-CONDA_ROOT=/path/to/conda bash install.sh
+CONDA_ROOT=/absolute/path/to/conda bash install.sh
 ```
 
 If the unpacked installer is not already under the detected conda root, it will offer to copy itself to:
@@ -312,20 +314,25 @@ need `.git` metadata to build reproducibly. See `docs/VERSION_LOCK.md` for the f
 readable version summary.
 
 Workflow scripts and helper modules are installed inside the independent conda
-environment, not into a global system directory. After activation,
-`$CONDA_PREFIX` points to the environment, so the scripts are available at:
+environment, not into a global system directory. Source scripts are kept at:
 
 ```text
 $CONDA_PREFIX/share/scenicplus-grn/scripts/
 ```
 
-For convenience, the step-by-step guide defines:
+User-facing wrappers are generated in:
 
-```bash
-export SCENICPLUS_HOME="$CONDA_PREFIX/share/scenicplus-grn"
+```text
+$CONDA_PREFIX/bin/spgrn-*
 ```
 
-and then calls scripts as `$SCENICPLUS_HOME/scripts/<script>.py`.
+After activation, or after sourcing a project `project_env.sh`, run workflow
+commands directly:
+
+```bash
+spgrn-setup-workflow-params --section snakemake
+spgrn-run-scenicplus-snakemake --mode dryrun
+```
 
 Core Python, command-line, and genomics layer:
 
@@ -496,9 +503,9 @@ AUTOZYME_DISABLED=1 Rscript your_analysis.R
 If you only need to validate an existing installation:
 
 ```bash
-CONDA_ROOT=/path/to/conda
+CONDA_ROOT=/absolute/path/to/conda
 ENV_NAME=scenicplus-grn
-bash "$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn/bin/check_environment.sh" \
+"$CONDA_ROOT/envs/$ENV_NAME/bin/spgrn-check" \
   --conda-root "$CONDA_ROOT" \
   --env-name "$ENV_NAME"
 ```

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import os
+import sys
 
 PROJECT = Path(os.environ.get("PROJECT_DIR", ".")).expanduser().resolve()
 os.environ.setdefault("MPLCONFIGDIR", str(PROJECT / "tmp" / "matplotlib"))
@@ -20,6 +21,14 @@ WORK = PROJECT / "work" / "annotated_seurat"
 
 
 def main() -> None:
+    if any(arg in {"-h", "--help"} for arg in sys.argv[1:]):
+        print(
+            "Usage: make_annotated_seurat_gex_h5ad.py\n\n"
+            "Build inputs/gex.h5ad from RNA counts exported from an annotated "
+            "Seurat object. Requires $PROJECT_DIR, inputs/cell_metadata.tsv and "
+            "work/annotated_seurat/rna_counts.genes_by_cells.mtx.gz."
+        )
+        return
     matrix_path = WORK / "rna_counts.genes_by_cells.mtx.gz"
     genes_path = WORK / "genes.tsv"
     cells_path = WORK / "cells.tsv"
