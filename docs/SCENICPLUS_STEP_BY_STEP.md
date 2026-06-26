@@ -369,8 +369,10 @@ spgrn-setup-workflow-params --section pycistopic
 5.2-Run pycisTopic:
 
 ```bash
-spgrn-run-pycistopic-workflow 2>&1 | tee "$PROJECT_DIR/logs/run_pycistopic_workflow.log"
+spgrn-run-pycistopic-workflow
 ```
+
+The command writes its own timestamped log under `$PROJECT_DIR/logs/`.
 
 5.3-If a previous run was interrupted, validate pseudobulk files:
 

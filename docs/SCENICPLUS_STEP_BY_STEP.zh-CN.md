@@ -338,8 +338,10 @@ spgrn-setup-workflow-params --section pycistopic
 5.2-运行 pycisTopic：
 
 ```bash
-spgrn-run-pycistopic-workflow 2>&1 | tee "$PROJECT_DIR/logs/run_pycistopic_workflow.log"
+spgrn-run-pycistopic-workflow
 ```
+
+该命令会自动在 `$PROJECT_DIR/logs/` 下写入带时间戳的日志。
 
 5.3-如曾中断，验证 pseudobulk 文件：
 

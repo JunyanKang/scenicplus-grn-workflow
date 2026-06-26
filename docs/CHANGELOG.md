@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.33 - 2026-06-26
+
+Simplifies pycisTopic workflow logging.
+
+Highlights:
+
+- `spgrn-run-pycistopic-workflow` now writes a timestamped log under
+  `$PROJECT_DIR/logs/` while still streaming output to the terminal.
+- Step-by-step commands no longer require manual shell `tee` for pycisTopic.
+
 ## 0.1.32 - 2026-06-26
 
 Rewrites the step-by-step workflow guides as release-quality student-facing

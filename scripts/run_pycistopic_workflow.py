@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from datetime import datetime
 import json
 import os
 import pickle
@@ -8,6 +9,7 @@ import re
 import shutil
 import subprocess
 import sys
+import traceback
 from typing import Mapping, Sequence
 
 PROJECT = Path(os.environ.get("PROJECT_DIR", ".")).expanduser().resolve()
@@ -82,6 +84,23 @@ INPUTS = PROJECT / "inputs"
 WORK = PROJECT / "work" / "pycistopic"
 RESULTS = PROJECT / "results" / "pycistopic"
 LOGS = PROJECT / "logs"
+
+
+class Tee:
+    def __init__(self, *streams):
+        self.streams = streams
+
+    def write(self, data: str) -> int:
+        for stream in self.streams:
+            stream.write(data)
+            stream.flush()
+        return len(data)
+
+    def flush(self) -> None:
+        for stream in self.streams:
+            stream.flush()
+
+
 def mkdirs() -> None:
     for path in [
         WORK,
@@ -978,7 +997,7 @@ def final_checks() -> None:
             raise FileNotFoundError(f"No BED files written in {d}")
 
 
-def main() -> None:
+def run_workflow() -> None:
     mkdirs()
     sample_sheet, cell_meta, topic_grid, atac_qc, params = load_inputs()
     write_cell_accounting(cell_meta)
@@ -994,6 +1013,24 @@ def main() -> None:
     print("pycisTopic workflow completed")
     print(f"cells_in_metadata\t{cell_meta.shape[0]}")
     print(f"consensus_peaks\t{sum(1 for _ in open(consensus_bed))}")
+
+
+def main() -> None:
+    LOGS.mkdir(parents=True, exist_ok=True)
+    log_path = LOGS / f"run_pycistopic_workflow_{datetime.now():%Y%m%d_%H%M%S}.log"
+    with log_path.open("w") as log_handle:
+        old_stdout, old_stderr = sys.stdout, sys.stderr
+        sys.stdout = Tee(old_stdout, log_handle)
+        sys.stderr = Tee(old_stderr, log_handle)
+        try:
+            print(f"pycisTopic workflow log\t{log_path}")
+            run_workflow()
+        except Exception:
+            traceback.print_exc()
+            raise SystemExit(1)
+        finally:
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
 
 
 if __name__ == "__main__":
