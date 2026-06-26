@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.1.53 - 2026-06-26
+
+Hardens resource entry points after release testing.
+
+Highlights:
+
+- Removes obsolete genome-resource helper scripts now covered by
+  `spgrn-prepare-official-resources`.
+- Removes the old Python publication-plot entry point so
+  `spgrn-plot-scenicplus-publication-outputs` resolves unambiguously to the R
+  renderer.
+- Fixes `spgrn-prepare-official-resources --motifs-only` validation so
+  motif-only runs require motif resources but do not incorrectly fail on
+  missing genome FASTA/GTF outputs.
+- Verifies `--ref human` generates and installs a non-empty orthology-mapped
+  motif2TF table, and `--generate-motif2tf` generates and installs a non-empty
+  audited symbol-evidence motif2TF table.
+
 ## 0.1.52 - 2026-06-26
 
 Renames the release package to `scenicplus-grn-workflow`.
