@@ -1,13 +1,8 @@
 # scenicplus-grn-workflow
 
-Reproducible workflow toolkit for SCENIC+ gene regulatory network analysis
-from annotated matched snRNA+snATAC / scMultiome data.
+Reproducible workflow toolkit for SCENIC+ gene regulatory network analysis from annotated matched snRNA+snATAC / scMultiome data. It creates an isolated `scenicplus-grn` conda environment, installs the pinned Python, R, genomics and SCENIC+ layers, and provides `spgrn-*` commands for project initialization, resource preparation, pycisTopic, custom cisTarget database construction, SCENIC+ Snakemake execution and postprocessing.
 
-It creates an isolated `scenicplus-grn` conda environment, installs the pinned
-Python, R, genomics and SCENIC+ layers, and provides `spgrn-*`
-commands for project initialization, resource preparation, pycisTopic,
-custom cisTarget database construction, SCENIC+ Snakemake execution and
-postprocessing.
+Install from the complete `scenicplus-grn-workflow-v*.tar.gz` package on [GitHub Releases](https://github.com/JunyanKang/scenicplus-grn-workflow/releases). That package includes `archives/vendor.tar.gz` for servers and restricted-network environments. The green GitHub `Code` ZIP contains source only and does not include the offline vendor archive, so installation from that ZIP requires GitHub access for third-party source downloads.
 
 ## What This Is For
 
