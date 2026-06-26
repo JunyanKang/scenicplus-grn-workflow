@@ -1,76 +1,80 @@
 # scenicplus-grn-installer
 
-Reproducible conda installer and workflow launcher for SCENIC+ gene regulatory
-network analysis from annotated matched snRNA+snATAC / scMultiome data.
+用于 SCENIC+ gene regulatory network 分析的可复现 conda 安装器和 workflow
+命令集合，面向已经完成注释的 matched snRNA+snATAC / scMultiome 数据。
 
-The installer creates an isolated `scenicplus-grn` conda environment, installs
-the pinned Python, R, genomics and SCENIC+ layers, and provides `spgrn-*`
-commands for project initialization, resource preparation, pycisTopic,
-custom cisTarget database construction, SCENIC+ Snakemake execution and
-postprocessing.
+安装器会创建独立的 `scenicplus-grn` conda 环境，安装固定版本的 Python、
+R、基因组学工具和 SCENIC+ 相关软件，并提供 `spgrn-*` 命令用于项目初始化、
+公共资源准备、pycisTopic、自定义 cisTarget database、SCENIC+ Snakemake
+运行和结果整理。
 
-## What This Is For
+## 适用场景
 
-Use this package when you need a portable SCENIC+ analysis environment on a
-workstation or Linux server and want the workflow scripts, version records and
-offline source archives shipped together.
+这个安装包适合需要在工作站或 Linux 服务器上复用同一套 SCENIC+ 分析环境，
+并希望 workflow 脚本、版本记录和离线源码归档一起分发的项目。
 
-It is intended for:
+适用于：
 
-- annotated scMultiome objects plus matched ATAC fragments,
-- metacell-based SCENIC+ runs,
-- custom cisTarget databases built from the project consensus region universe,
-- reproducible reruns and output checks.
+- 已注释的 scMultiome 对象和匹配的 ATAC fragments，
+- metacell-based SCENIC+ 分析，
+- 基于项目 consensus region universe 构建 custom cisTarget database，
+- 可复现 rerun、稳定性检查和结果输出。
 
-Detailed analysis instructions live in:
+详细分析流程见：
 
 ```text
 docs/SCENICPLUS_STEP_BY_STEP.md
-docs/SCENICPLUS_STEP_BY_STEP.zh-CN.md
 ```
 
-## Supported Platforms
+English README and workflow guide:
+
+```text
+README.en.md
+docs/SCENICPLUS_STEP_BY_STEP.en.md
+```
+
+## 支持平台
 
 ```text
 Linux x86_64      glibc >= 2.17
 macOS arm64       Apple Silicon
 ```
 
-The installer expects an existing conda-style root such as Miniforge,
-Miniconda, Mambaforge, Anaconda or `/opt/conda`.
+安装前需要已有 conda 风格目录，例如 Miniforge、Miniconda、Mambaforge、
+Anaconda 或 `/opt/conda`。
 
-## Quick Start
+## 快速安装
 
-Unpack the release archive on the target machine:
+在目标机器解压 release archive：
 
 ```bash
 tar -xzf scenicplus-grn-installer.tar.gz
 cd scenicplus-grn-installer
 ```
 
-Run the installer:
+运行安装器：
 
 ```bash
 CONDA_ROOT=/absolute/path/to/conda bash install.sh
 ```
 
-For unattended installation:
+非交互安装：
 
 ```bash
 ASSUME_YES=1 CONDA_ROOT=/absolute/path/to/conda bash install.sh
 ```
 
-A successful run ends with:
+成功安装时日志结尾为：
 
 ```text
 DONE: SCENIC+ environment is installed and checked.
 ```
 
-## Background Installation
+## 后台安装
 
-Long server installs should run in `tmux` or with `nohup`.
+服务器安装耗时较长时，建议用 `tmux` 或 `nohup`。
 
-With `tmux`:
+使用 `tmux`：
 
 ```bash
 tmux new -s scenicplus-install
@@ -78,13 +82,13 @@ cd scenicplus-grn-installer
 ASSUME_YES=1 CONDA_ROOT=/absolute/path/to/conda bash install.sh
 ```
 
-Detach with `Ctrl-b` then `d`, and reattach later:
+按 `Ctrl-b` 然后 `d` 退出会话，之后重新进入：
 
 ```bash
 tmux attach -t scenicplus-install
 ```
 
-Without `tmux`:
+不用 `tmux`：
 
 ```bash
 cd scenicplus-grn-installer
@@ -94,28 +98,28 @@ nohup env ASSUME_YES=1 CONDA_ROOT=/absolute/path/to/conda bash install.sh \
 echo $! > logs/install.pid
 ```
 
-Follow the newest installer log:
+追踪最新安装日志：
 
 ```bash
 tail -f "$(ls -t logs/install_*.log | head -n 1)"
 ```
 
-## Installation Options
+## 安装参数
 
-| Variable | Default | Meaning |
+| 变量 | 默认值 | 含义 |
 |---|---:|---|
-| `CONDA_ROOT` | auto-detect | Conda root to use. |
-| `ENV_NAME` | `scenicplus-grn` | Environment name to create or update. |
-| `ASSUME_YES` | `0` | Set to `1` for non-interactive prompts. |
-| `FORCE` | `0` | Set to `1` to recreate the environment. |
-| `GITHUB_TRIES` | `3` | GitHub attempts before bundled source archives are used. |
-| `INSTALL_MALLET` | `1` | Install MALLET backend for pycisTopic topic modeling. |
-| `AUTO_INSTALL_MAMBA` | `1` | Bootstrap `mamba` into conda base if missing. |
-| `PRECHECK_ONLY` | `0` | Check platform, paths and permissions without installing. |
-| `RELOCATE_INSTALLER` | `1` | Offer to copy the installer to `$CONDA_ROOT/share/scenicplus-grn-installer`. |
-| `LOG_DIR` | `logs/` | Installer log directory. |
+| `CONDA_ROOT` | 自动检测 | 使用的 conda 根目录。 |
+| `ENV_NAME` | `scenicplus-grn` | 创建或更新的环境名。 |
+| `ASSUME_YES` | `0` | 设为 `1` 后使用非交互模式。 |
+| `FORCE` | `0` | 设为 `1` 后重建环境。 |
+| `GITHUB_TRIES` | `3` | GitHub 失败多少次后使用本地归档。 |
+| `INSTALL_MALLET` | `1` | 安装 pycisTopic MALLET topic-model backend。 |
+| `AUTO_INSTALL_MAMBA` | `1` | 如果 base 里没有 mamba，自动安装 mamba。 |
+| `PRECHECK_ONLY` | `0` | 只检查平台、路径和权限，不安装。 |
+| `RELOCATE_INSTALLER` | `1` | 询问是否复制安装器到 `$CONDA_ROOT/share/scenicplus-grn-installer`。 |
+| `LOG_DIR` | `logs/` | 安装日志目录。 |
 
-Examples:
+示例：
 
 ```bash
 ENV_NAME=scenicplus-grn-test CONDA_ROOT=/absolute/path/to/conda bash install.sh
@@ -124,18 +128,17 @@ FORCE=1 CONDA_ROOT=/absolute/path/to/conda bash install.sh
 PRECHECK_ONLY=1 CONDA_ROOT=/absolute/path/to/conda bash install.sh
 ```
 
-## What Gets Installed
+## 安装内容
 
-The environment contains:
+环境包含：
 
-- SCENIC+, pycisTopic, pycistarget and create_cisTarget_databases,
-- Python single-cell and genomics libraries,
-- R, Seurat, Signac, hdWGCNA and workflow dependencies,
-- command-line tools including `samtools`, `tabix`, `bgzip`, `bedtools`,
-  `macs2` and Snakemake,
-- MALLET 2.0.8 by default.
+- SCENIC+、pycisTopic、pycistarget 和 create_cisTarget_databases，
+- Python 单细胞和基因组学依赖，
+- R、Seurat、Signac、hdWGCNA 和 workflow 依赖，
+- `samtools`、`tabix`、`bgzip`、`bedtools`、`macs2`、Snakemake 等命令行工具，
+- 默认安装 MALLET 2.0.8。
 
-Version details are recorded in:
+版本信息记录在：
 
 ```text
 docs/VERSION_LOCK.md
@@ -143,59 +146,58 @@ docs/RELEASE_NOTES.md
 docs/CHANGELOG.md
 ```
 
-## Verify The Installation
+## 验证安装
 
-Activate the environment:
+激活环境：
 
 ```bash
 source /absolute/path/to/conda/bin/activate scenicplus-grn
 ```
 
-Run the installed checks:
+运行检查：
 
 ```bash
 spgrn-check
 spgrn-check-workflow-installation
 ```
 
-The checks verify core Python imports, R packages, command-line tools, MALLET,
-workflow scripts and installed documentation.
+检查内容包括核心 Python imports、R packages、命令行工具、MALLET、workflow
+脚本和已安装文档。
 
-## Offline And Restricted-Network Installs
+## 离线或网络受限安装
 
-The Git repository does not track the bundled source archive because it is a
-large binary release artifact. `archives/vendor.tar.gz` is distributed with the
-GitHub Release package, not with a normal source checkout or GitHub "Code"
-download.
+Git 仓库不跟踪 bundled source archive，因为这是体积较大的二进制 release
+artifact。`archives/vendor.tar.gz` 只随 GitHub Release package 分发，不会出现在
+普通源码 checkout 或 GitHub "Code" 下载包里。
 
-Release packages include:
+release package 包含：
 
 ```text
 archives/vendor.tar.gz
 ```
 
-`install.sh` expands this archive at runtime and uses the bundled sources when
-GitHub retries fail. To skip GitHub entirely:
+`install.sh` 会在运行时解压该归档；GitHub 重试失败后使用其中的本地源码。
+如需完全跳过 GitHub：
 
 ```bash
 GITHUB_TRIES=0 CONDA_ROOT=/absolute/path/to/conda bash install.sh
 ```
 
-## Logs And Troubleshooting
+## 日志和排错
 
-Installer logs are written to:
+安装日志默认写入：
 
 ```text
 logs/install_YYYYMMDD_HHMMSS.log
 ```
 
-If the unpacked directory is not writable, logs are written to:
+如果解压目录不可写，日志写入：
 
 ```text
 /tmp/scenicplus-grn-installer-logs
 ```
 
-Useful checks:
+常用检查：
 
 ```bash
 tail -n 80 logs/install_*.log
@@ -204,27 +206,26 @@ source /absolute/path/to/conda/bin/activate scenicplus-grn
 spgrn-check
 ```
 
-For a failed installation, keep the newest installer log and the command that
-was used to start the run.
+安装失败时，保留最新 installer log 和启动安装时使用的命令。
 
-## Repository Layout
+## 仓库结构
 
-Source checkout:
-
-```text
-install.sh                 Main installer.
-bin/                       Installer bootstrap checks and R layer installer.
-config/                    Conda recipes, pinned pip constraints and templates.
-scripts/                   Installed workflow command implementations.
-modules/                   Internal helper modules.
-docs/                      Step-by-step guides, changelog and version records.
-```
-
-Release package only:
+源码 checkout：
 
 ```text
-archives/vendor.tar.gz     Bundled offline source archives.
+install.sh                 主安装器。
+bin/                       安装 bootstrap 检查和 R 层安装器。
+config/                    conda recipe、pip constraints 和模板。
+scripts/                   安装后的 workflow 命令实现。
+modules/                   内部 helper modules。
+docs/                      step-by-step 文档、changelog 和版本记录。
 ```
 
-For offline or restricted-network installation, download the GitHub Release
-package or release asset rather than the source-only repository archive.
+仅 release package 包含：
+
+```text
+archives/vendor.tar.gz     离线源码归档。
+```
+
+如果需要离线或网络受限安装，应下载 GitHub Release package 或 release asset，
+不要使用 source-only 的仓库下载包。

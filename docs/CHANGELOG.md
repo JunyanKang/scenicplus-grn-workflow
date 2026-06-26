@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.37 - 2026-06-26
+
+Makes Chinese the GitHub-default documentation language.
+
+Highlights:
+
+- Uses Chinese content for root `README.md`, which GitHub renders by default.
+- Uses Chinese content for `docs/SCENICPLUS_STEP_BY_STEP.md`.
+- Preserves English documentation as `README.en.md` and
+  `docs/SCENICPLUS_STEP_BY_STEP.en.md`.
+
 ## 0.1.36 - 2026-06-26
 
 Simplifies the README installation guide.

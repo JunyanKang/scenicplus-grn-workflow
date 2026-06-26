@@ -1,6 +1,6 @@
 # Release Notes
 
-## scenicplus-grn-installer v0.1.36
+## scenicplus-grn-installer v0.1.37
 
 This release packages a reproducible SCENIC+/GRN conda installer and a strict matched snRNA+snATAC workflow for annotated scMultiome projects.
 
@@ -59,6 +59,9 @@ Main deliverables:
 - README installation content is shorter: installed script path details and the
   project-initialization example were removed from README and left to the
   step-by-step workflow guides.
+- GitHub-default documentation is now Chinese: `README.md` and
+  `docs/SCENICPLUS_STEP_BY_STEP.md` contain the Chinese guide, while English is
+  preserved as `.en.md`.
 - Generated SCENIC+ Snakefiles are patched to honor the stage-specific motif
   enrichment thread settings.
 - Large custom cisTarget databases can now use
