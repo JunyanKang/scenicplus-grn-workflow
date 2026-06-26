@@ -569,6 +569,8 @@ rho_threshold             region-gene correlation threshold。
 min_target_genes          每个 eRegulon 至少保留的 target genes 数。
 ```
 
+8.2-可选：大型 custom cisTarget database 分块运行 motif enrichment：
+
 大型 custom cisTarget database 可在正式 Snakemake run 前按 region-set family 分块运行 motif enrichment：
 
 ```bash

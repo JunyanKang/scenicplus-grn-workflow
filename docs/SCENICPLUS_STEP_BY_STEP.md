@@ -513,6 +513,8 @@ rho_threshold             Region-gene correlation threshold.
 min_target_genes          Minimum target genes retained per eRegulon.
 ```
 
+8.2-Optional split motif enrichment for very large custom databases:
+
 Very large ranking and score databases can still make a single motif-enrichment
 process retain too much memory while it iterates over DARs and topic-derived
 region sets. In that case, run motif enrichment as independent region-set-family
