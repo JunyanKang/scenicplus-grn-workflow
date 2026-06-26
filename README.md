@@ -34,7 +34,7 @@ Anaconda 或 `/opt/conda`。
 在目标机器解压 release archive：
 
 ```bash
-tar -xzf scenicplus-grn-workflow.tar.gz
+tar -xzf scenicplus-grn-workflow-v*.tar.gz
 cd scenicplus-grn-workflow
 ```
 

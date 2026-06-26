@@ -39,7 +39,7 @@ Miniconda, Mambaforge, Anaconda or `/opt/conda`.
 Unpack the release archive on the target machine:
 
 ```bash
-tar -xzf scenicplus-grn-workflow.tar.gz
+tar -xzf scenicplus-grn-workflow-v*.tar.gz
 cd scenicplus-grn-workflow
 ```
 

@@ -48,7 +48,7 @@ Usage:
   bash install.sh
 
 Recommended workflow:
-  tar -xzf scenicplus-grn-workflow.tar.gz
+  tar -xzf scenicplus-grn-workflow-v*.tar.gz
   cd scenicplus-grn-workflow
   bash install.sh
 
