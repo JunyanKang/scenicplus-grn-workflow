@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.32 - 2026-06-26
+
+Rewrites the step-by-step workflow guides as release-quality student-facing
+manuals.
+
+Highlights:
+
+- Keeps numbered runnable commands while removing development-note style text.
+- Adds concise biological and bioinformatics rationale for each workflow stage.
+- Keeps the English and Chinese guides aligned on the same 0-11 structure.
+- Rechecks documented `spgrn-*` commands against the installed command surface.
+
 ## 0.1.31 - 2026-06-26
 
 Hardens the optional split motif-enrichment path.
