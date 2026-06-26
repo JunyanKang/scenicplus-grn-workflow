@@ -130,18 +130,7 @@ PRECHECK_ONLY=1 CONDA_ROOT=/absolute/path/to/conda bash install.sh
 - Python 单细胞和基因组学依赖，
 - R、Seurat、Signac、hdWGCNA 和 workflow 依赖，
 - `samtools`、`tabix`、`bgzip`、`bedtools`、`macs2`、Snakemake 等命令行工具，
-- 默认安装 MALLET 2.0.8，
-- workflow 脚本安装到：
-
-```text
-$CONDA_PREFIX/share/scenicplus-grn
-```
-
-短命令安装到：
-
-```text
-$CONDA_PREFIX/bin/spgrn-*
-```
+- 默认安装 MALLET 2.0.8。
 
 版本信息记录在：
 
@@ -168,38 +157,6 @@ spgrn-check-workflow-installation
 
 检查内容包括核心 Python imports、R packages、命令行工具、MALLET、workflow
 脚本和已安装文档。
-
-## 初始化项目
-
-使用已安装的初始化命令创建或更新项目：
-
-```bash
-# 运行前先替换这些示例值。
-# CONDA_ROOT 需要改成真实 conda/miniforge/miniconda 根目录。
-export CONDA_ROOT=/absolute/path/to/conda
-export ENV_NAME=scenicplus-grn
-# PROJECT_DIR 需要改成专用 SCENIC+ 分析目录。
-export PROJECT_DIR=/absolute/path/to/grn_project
-# ORGANISM 需要改成支持物种 key 之一。
-export ORGANISM=mouse
-export AUTOZYME=on
-export ENSEMBL_RELEASE=115
-# ANNOTATED_OBJECT 需要改成本次 active annotated object 的真实路径。
-export ANNOTATED_OBJECT=/absolute/path/to/annotated_multiome_object.rds
-# CELL_LABEL_COLUMN 需要改成 ANNOTATED_OBJECT 中真实存在的 metadata column。
-export CELL_LABEL_COLUMN=cell_annotation
-# ATAC_INPUT_LAYOUT 需要和真实 ATAC_DATA_ROOT 目录结构匹配。
-export ATAC_INPUT_LAYOUT=split_ge_arc
-export ATAC_DATA_ROOT=/absolute/path/to/raw_atac_data
-spgrn-initialize
-```
-
-之后按照 step-by-step 文档进行资源准备、pycisTopic、custom cisTarget
-database、SCENIC+ inference 和 postprocess：
-
-```text
-$CONDA_PREFIX/share/scenicplus-grn/docs/SCENICPLUS_STEP_BY_STEP.zh-CN.md
-```
 
 ## 离线或网络受限安装
 

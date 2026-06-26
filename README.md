@@ -133,18 +133,7 @@ The environment contains:
 - R, Seurat, Signac, hdWGCNA and workflow dependencies,
 - command-line tools including `samtools`, `tabix`, `bgzip`, `bedtools`,
   `macs2` and Snakemake,
-- MALLET 2.0.8 by default,
-- workflow scripts installed under:
-
-```text
-$CONDA_PREFIX/share/scenicplus-grn
-```
-
-Short commands are installed into:
-
-```text
-$CONDA_PREFIX/bin/spgrn-*
-```
+- MALLET 2.0.8 by default.
 
 Version details are recorded in:
 
@@ -171,38 +160,6 @@ spgrn-check-workflow-installation
 
 The checks verify core Python imports, R packages, command-line tools, MALLET,
 workflow scripts and installed documentation.
-
-## Project Initialization
-
-Create or update a project using the installed initializer:
-
-```bash
-# Replace these example values before running.
-# CONDA_ROOT must be the real conda/miniforge/miniconda root.
-export CONDA_ROOT=/absolute/path/to/conda
-export ENV_NAME=scenicplus-grn
-# PROJECT_DIR must be a dedicated SCENIC+ analysis directory.
-export PROJECT_DIR=/absolute/path/to/grn_project
-# ORGANISM must be one supported organism key.
-export ORGANISM=mouse
-export AUTOZYME=on
-export ENSEMBL_RELEASE=115
-# ANNOTATED_OBJECT must be the active annotated object for this analysis.
-export ANNOTATED_OBJECT=/absolute/path/to/annotated_multiome_object.rds
-# CELL_LABEL_COLUMN must be a real metadata column in ANNOTATED_OBJECT.
-export CELL_LABEL_COLUMN=cell_annotation
-# ATAC_INPUT_LAYOUT must match the real ATAC_DATA_ROOT structure.
-export ATAC_INPUT_LAYOUT=split_ge_arc
-export ATAC_DATA_ROOT=/absolute/path/to/raw_atac_data
-spgrn-initialize
-```
-
-Then follow the step-by-step guide for resource preparation, pycisTopic,
-custom cisTarget database construction, SCENIC+ inference and postprocessing:
-
-```text
-$CONDA_PREFIX/share/scenicplus-grn/docs/SCENICPLUS_STEP_BY_STEP.md
-```
 
 ## Offline And Restricted-Network Installs
 

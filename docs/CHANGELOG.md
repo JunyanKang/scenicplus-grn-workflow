@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.36 - 2026-06-26
+
+Simplifies the README installation guide.
+
+Highlights:
+
+- Removes installed path details for workflow scripts and `spgrn-*` command
+  wrappers from the README.
+- Removes the project-initialization example from the README; detailed project
+  setup remains in the step-by-step workflow guides.
+
 ## 0.1.35 - 2026-06-26
 
 Clarifies student-editable placeholders in the README and workflow guides.

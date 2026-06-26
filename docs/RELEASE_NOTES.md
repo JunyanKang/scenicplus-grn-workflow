@@ -1,6 +1,6 @@
 # Release Notes
 
-## scenicplus-grn-installer v0.1.35
+## scenicplus-grn-installer v0.1.36
 
 This release packages a reproducible SCENIC+/GRN conda installer and a strict matched snRNA+snATAC workflow for annotated scMultiome projects.
 
@@ -56,6 +56,9 @@ Main deliverables:
 - The README now distinguishes source checkout layout from release-package
   layout: `archives/vendor.tar.gz` is distributed as a release artifact, not as
   a Git-tracked repository file.
+- README installation content is shorter: installed script path details and the
+  project-initialization example were removed from README and left to the
+  step-by-step workflow guides.
 - Generated SCENIC+ Snakefiles are patched to honor the stage-specific motif
   enrichment thread settings.
 - Large custom cisTarget databases can now use
