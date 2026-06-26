@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.39 - 2026-06-26
+
+Simplifies the Chinese README landing page.
+
+Highlights:
+
+- Removes the explicit English documentation pointer from the default Chinese
+  README.
+
 ## 0.1.38 - 2026-06-26
 
 Adds explicit licensing and third-party notices.
