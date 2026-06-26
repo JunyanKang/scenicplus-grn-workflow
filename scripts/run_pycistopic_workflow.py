@@ -33,6 +33,18 @@ import pandas as pd
 import pyranges as pr
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+try:
+    from tqdm.auto import tqdm
+except Exception:  # pragma: no cover - optional UI dependency
+    class tqdm:
+        def __init__(self, total=None, desc=None, unit=None):
+            self.total = total
+        def __enter__(self):
+            return self
+        def __exit__(self, exc_type, exc, tb):
+            return False
+        def update(self, n=1):
+            return None
 
 _env_prefix = os.environ.get("CONDA_ENV_PREFIX") or os.environ.get("CONDA_PREFIX")
 _script_modules = Path(__file__).resolve().parent.parent / "modules"
@@ -999,17 +1011,26 @@ def final_checks() -> None:
 
 def run_workflow() -> None:
     mkdirs()
-    sample_sheet, cell_meta, topic_grid, atac_qc, params = load_inputs()
-    write_cell_accounting(cell_meta)
-    consensus_bed = run_pseudobulk_and_peak_calling(sample_sheet, cell_meta, params)
-    cistopic_obj = build_cistopic_object(sample_sheet, cell_meta, atac_qc, params, consensus_bed)
-    cistopic_obj = run_topic_models(cistopic_obj, topic_grid, params)
-    export_topic_region_sets(cistopic_obj, params)
-    export_dar_region_sets(cistopic_obj, params)
-    with open(INPUTS / "cistopic_obj.pkl", "wb") as handle:
-        pickle.dump(cistopic_obj, handle)
-    write_manifest(sample_sheet, cell_meta, topic_grid, params, consensus_bed)
-    final_checks()
+    with tqdm(total=8, desc="pycisTopic workflow", unit="stage") as progress:
+        sample_sheet, cell_meta, topic_grid, atac_qc, params = load_inputs()
+        write_cell_accounting(cell_meta)
+        progress.update()
+        consensus_bed = run_pseudobulk_and_peak_calling(sample_sheet, cell_meta, params)
+        progress.update()
+        cistopic_obj = build_cistopic_object(sample_sheet, cell_meta, atac_qc, params, consensus_bed)
+        progress.update()
+        cistopic_obj = run_topic_models(cistopic_obj, topic_grid, params)
+        progress.update()
+        export_topic_region_sets(cistopic_obj, params)
+        progress.update()
+        export_dar_region_sets(cistopic_obj, params)
+        progress.update()
+        with open(INPUTS / "cistopic_obj.pkl", "wb") as handle:
+            pickle.dump(cistopic_obj, handle)
+        write_manifest(sample_sheet, cell_meta, topic_grid, params, consensus_bed)
+        progress.update()
+        final_checks()
+        progress.update()
     print("pycisTopic workflow completed")
     print(f"cells_in_metadata\t{cell_meta.shape[0]}")
     print(f"consensus_peaks\t{sum(1 for _ in open(consensus_bed))}")

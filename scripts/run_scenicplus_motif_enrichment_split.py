@@ -21,6 +21,12 @@ import pandas as pd
 import psutil
 import yaml
 
+try:
+    from tqdm.auto import tqdm
+except Exception:  # pragma: no cover - optional UI dependency
+    def tqdm(iterable=None, **_kwargs):
+        return iterable if iterable is not None else []
+
 
 PROJECT = Path(os.environ.get("PROJECT_DIR", ".")).expanduser().resolve()
 
@@ -535,7 +541,7 @@ def run_chunks(
 ) -> list[Path]:
     outputs: list[Path] = []
     if max_parallel <= 1:
-        for label, folder in chunks:
+        for label, folder in tqdm(chunks, desc=f"{method} chunks", unit="chunk"):
             out = run_one(
                 label,
                 method,
@@ -568,7 +574,7 @@ def run_chunks(
             )
             for label, folder in chunks
         ]
-        for future in cf.as_completed(futures):
+        for future in tqdm(cf.as_completed(futures), total=len(futures), desc=f"{method} chunks", unit="chunk"):
             out = future.result()
             if out is not None:
                 outputs.append(out)

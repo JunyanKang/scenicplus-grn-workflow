@@ -12,6 +12,12 @@ from pathlib import Path
 
 import pandas as pd
 
+try:
+    from tqdm.auto import tqdm
+except Exception:  # pragma: no cover - optional UI dependency
+    def tqdm(iterable=None, **_kwargs):
+        return iterable if iterable is not None else []
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -406,7 +412,7 @@ def main() -> None:
         partial_dir = work_dir / "partial_scores"
         partial_dir.mkdir(parents=True, exist_ok=True)
         partial_prefix = partial_dir / out_prefix.name
-        for part in range(1, n_parts + 1):
+        for part in tqdm(range(1, n_parts + 1), desc="custom cisTarget partials", unit="part"):
             partial_file = Path(
                 f"{partial_prefix}.part_{part:04d}_of_{n_parts:04d}.motifs_vs_regions.scores.feather"
             )

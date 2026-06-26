@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.34 - 2026-06-26
+
+Adds terminal progress indicators where the workflow has real bounded work
+units.
+
+Highlights:
+
+- Adds `tqdm` progress bars for custom cisTarget partial database parts.
+- Adds `tqdm` progress bars for split DEM/cisTarget region-set chunks.
+- Adds a stage-level pycisTopic workflow progress indicator while retaining the
+  timestamped run log.
+- Keeps heartbeat logging for long single-process jobs where a true percentage
+  is not available.
+
 ## 0.1.33 - 2026-06-26
 
 Simplifies pycisTopic workflow logging.

@@ -1,6 +1,6 @@
 # Release Notes
 
-## scenicplus-grn-installer v0.1.33
+## scenicplus-grn-installer v0.1.34
 
 This release packages a reproducible SCENIC+/GRN conda installer and a strict matched snRNA+snATAC workflow for annotated scMultiome projects.
 
@@ -48,6 +48,8 @@ Main deliverables:
   manuals with runnable command numbering and stage-level biological rationale.
 - The pycisTopic workflow command now manages its own timestamped log under
   `$PROJECT_DIR/logs/`, so the documented command no longer needs shell `tee`.
+- Bounded long-running loops now show terminal progress indicators: custom
+  cisTarget partial parts, split motif-enrichment chunks and pycisTopic stages.
 - Generated SCENIC+ Snakefiles are patched to honor the stage-specific motif
   enrichment thread settings.
 - Large custom cisTarget databases can now use
