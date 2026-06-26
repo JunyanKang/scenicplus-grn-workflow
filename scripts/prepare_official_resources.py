@@ -946,7 +946,14 @@ def status_row(name: str, path: Path, kind: str, required: bool = True, min_size
     }
 
 
-def collect_status(organism_list: list[str], resources: Path, inputs: Path, skip_motifs: bool, require_project_motif_annotation: bool) -> pd.DataFrame:
+def collect_status(
+    organism_list: list[str],
+    resources: Path,
+    inputs: Path,
+    skip_motifs: bool,
+    require_project_motif_annotation: bool,
+    require_genome_resources: bool = True,
+) -> pd.DataFrame:
     rows = []
     for species in organism_list:
         prefix = cfg_for(species)["prefix"]
@@ -955,11 +962,11 @@ def collect_status(organism_list: list[str], resources: Path, inputs: Path, skip
             [
                 status_row(f"{species}.genome_ensembl_fasta_gz", species_dir / "genome.ensembl.fa.gz", "gzip", required=False),
                 status_row(f"{species}.genes_ensembl_gtf_gz", species_dir / "genes.ensembl.gtf.gz", "gzip", required=False),
-                status_row(f"{species}.allowed_chroms", resources / "chromosomes" / f"{species}.ucsc.standard.chroms.txt", "text"),
-                status_row(f"{species}.ucsc_fasta", species_dir / f"{prefix}.ucsc.standard.fa", "text"),
-                status_row(f"{species}.ucsc_gtf", species_dir / f"{prefix}.ucsc.standard.gtf", "text"),
-                status_row(f"{species}.chromsizes", species_dir / f"{prefix}.ucsc.standard.chromsizes.tsv", "table"),
-                status_row(f"{species}.genome_annotation", species_dir / f"{prefix}.ucsc.standard.genome_annotation.tsv", "table"),
+                status_row(f"{species}.allowed_chroms", resources / "chromosomes" / f"{species}.ucsc.standard.chroms.txt", "text", required=require_genome_resources),
+                status_row(f"{species}.ucsc_fasta", species_dir / f"{prefix}.ucsc.standard.fa", "text", required=require_genome_resources),
+                status_row(f"{species}.ucsc_gtf", species_dir / f"{prefix}.ucsc.standard.gtf", "text", required=require_genome_resources),
+                status_row(f"{species}.chromsizes", species_dir / f"{prefix}.ucsc.standard.chromsizes.tsv", "table", required=require_genome_resources),
+                status_row(f"{species}.genome_annotation", species_dir / f"{prefix}.ucsc.standard.genome_annotation.tsv", "table", required=require_genome_resources),
             ]
         )
     if not skip_motifs:
@@ -1155,7 +1162,14 @@ def main() -> None:
                     orthology_policy=args.orthology_policy,
                     generate_motif2tf=args.generate_motif2tf,
                 )
-    status = collect_status(organism_list, resources, inputs, args.skip_motifs, require_project_motif_annotation=single_organism and not args.skip_motifs)
+    status = collect_status(
+        organism_list,
+        resources,
+        inputs,
+        args.skip_motifs,
+        require_project_motif_annotation=single_organism and not args.skip_motifs,
+        require_genome_resources=not args.motifs_only,
+    )
     status_path = resources / "resource_status.tsv"
     status.to_csv(status_path, sep="\t", index=False)
     manifest_path = write_manifest(
