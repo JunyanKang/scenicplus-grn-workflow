@@ -6,6 +6,7 @@ CONDA_ROOT="${CONDA_ROOT:-}"
 CONFIG_FILE=""
 SKIP_R=0
 SKIP_WORKFLOW_ASSETS=0
+LOG_FILE=""
 
 CACHE_ROOT="${SCENICPLUS_CHECK_CACHE_ROOT:-${TMPDIR:-/tmp}/scenicplus-grn-check-${ENV_NAME}}"
 mkdir -p "$CACHE_ROOT/numba" "$CACHE_ROOT/matplotlib"
@@ -24,6 +25,7 @@ Options:
   --env-name NAME            Environment name. Default: scenicplus-grn.
   --skip-r                   Skip R package smoke tests.
   --skip-workflow-assets     Skip installed workflow asset checks.
+  --log PATH                 Write a timestamped check log. Default: PROJECT_DIR/logs/check_environment_<timestamp>.log when PROJECT_DIR is set.
   -h, --help                 Show this message.
 EOF
 }
@@ -145,6 +147,10 @@ while [[ $# -gt 0 ]]; do
       SKIP_WORKFLOW_ASSETS=1
       shift
       ;;
+    --log)
+      LOG_FILE="$2"
+      shift 2
+      ;;
     -h|--help)
       usage
       exit 0
@@ -163,6 +169,25 @@ fi
 if [[ "${CHECK_R:-1}" == "0" ]]; then
   SKIP_R=1
 fi
+
+setup_log() {
+  local log_file="$1"
+  if [[ -z "$log_file" && -n "${PROJECT_DIR:-}" ]]; then
+    local project_dir stamp
+    project_dir="$(expand_path "$PROJECT_DIR")"
+    mkdir -p "$project_dir/logs"
+    stamp="$(date +%Y%m%d_%H%M%S)"
+    log_file="$project_dir/logs/check_environment_${stamp}.log"
+  fi
+  if [[ -n "$log_file" ]]; then
+    mkdir -p "$(dirname "$log_file")"
+    exec > >(tee -a "$log_file") 2>&1
+    echo "SCENIC+ environment check log: $log_file"
+    echo "Started: $(date)"
+  fi
+}
+
+setup_log "$LOG_FILE"
 
 CONDA_ROOT="$(detect_conda_root)"
 CONDA_BIN="$CONDA_ROOT/bin/conda"

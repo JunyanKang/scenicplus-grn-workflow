@@ -24,105 +24,36 @@ Aerts cisTarget resources: https://resources.aertslab.org/cistarget/
 
 ## 0. 初始化环境和项目
 
-目的：固定本次 GRN 分析的环境、物种、active object、细胞标签列和 ATAC 输入目录。这里的定义会写入 `$PROJECT_DIR/scenicplus_project.env` 和 `$PROJECT_DIR/project_env.sh`，后续命令都从这里读取。
+目的：固定本次 GRN 分析的 conda 环境和项目目录。这里的定义会写入 `$PROJECT_DIR/scenicplus_project.env` 和 `$PROJECT_DIR/project_env.sh`，后续步骤会逐步追加物种、annotated object、cell label 和 ATAC 输入参数。
 
-生物信息学逻辑：SCENIC+ 的 TF-region-gene 连接依赖 cell identity、genome build、fragment barcode 和 peak universe。Step 0 如果选错对象或物种，后面即使命令成功，结果也不能解释为目标细胞群的调控网络。
-
-支持物种：
-
-```text
-human      Homo sapiens GRCh38, chr1-chr22, chrX, chrY
-mouse      Mus musculus GRCm39, chr1-chr19, chrX, chrY
-cyno       Macaca fascicularis 6.0, chr1-chr20, chrX
-rat        Rattus norvegicus GRCr8, chr1-chr20, chrX, chrY
-rabbit     Oryctolagus cuniculus OryCun2.0, chr1-chr21, chrX
-chicken    Gallus gallus GRCg7b, chr1-chr39, chrZ, chrW
-zebrafish  Danio rerio GRCz11, chr1-chr25
-```
-
-支持的 ATAC 输入布局：
-
-```text
-split_ge_arc
-  ATAC_DATA_ROOT/
-  |-- fragments/
-  |   |-- sample_1_arc/
-  |   |   |-- sample_1_A_fragments.tsv.gz
-  |   |   `-- sample_1_A_fragments.tsv.gz.tbi
-  |   `-- sample_2_arc/
-  |       |-- sample_2_A_fragments.tsv.gz
-  |       `-- sample_2_A_fragments.tsv.gz.tbi
-  `-- bed/
-      |-- sample_1_arc/
-      |   `-- sample_1_A_peaks.bed
-      `-- sample_2_arc/
-          `-- sample_2_A_peaks.bed
-
-cellranger_outs
-  ATAC_DATA_ROOT/
-  |-- sample_1/
-  |   `-- outs/
-  |       |-- fragments.tsv.gz
-  |       |-- fragments.tsv.gz.tbi
-  |       `-- peaks.bed
-  `-- sample_2/
-      `-- outs/
-          |-- fragments.tsv.gz
-          |-- fragments.tsv.gz.tbi
-          `-- peaks.bed
-```
+生物信息学逻辑：先把运行环境和输出目录固定下来，后续每一步只在对应分析对象明确时写入参数，减少把错误对象或错误 ATAC 目录带入全流程的风险。
 
 0.1-输入项目参数：
 
 ```bash
 # 运行前必须替换本代码块中的所有示例值。
-# /absolute/path/to/conda 需要改成真实 conda/miniforge/miniconda 根目录。
+# CONDA_ROOT 是真实 conda/miniforge/miniconda/mambaforge/anaconda 根目录。
 export CONDA_ROOT=/absolute/path/to/conda
+# ENV_NAME 是 workflow 安装创建的 SCENIC+ 环境名。
 export ENV_NAME=scenicplus-grn
-# PROJECT_DIR 需要改成专用 SCENIC+ 分析目录。
+# 将已安装环境命令加入当前终端 PATH，后续可以直接使用 spgrn-* 命令。
+export PATH="$CONDA_ROOT/envs/$ENV_NAME/bin:$PATH"
+# PROJECT_DIR 是本次 SCENIC+ 分析根目录，所有 inputs/work/logs/results 都写在这里。
 export PROJECT_DIR=/absolute/path/to/grn_project/scenicplus_analysis
-# ORGANISM 需要改成上方支持物种 key 之一。
-export ORGANISM=mouse
+# AUTOZYME 设置为 on 或 off，控制 AutoZyme runtime 是否启用。
 export AUTOZYME=on
-export ENSEMBL_RELEASE=115
-# ANNOTATED_OBJECT 需要改成本次 active annotated object 的真实路径。
-export ANNOTATED_OBJECT=/absolute/path/to/active_annotated_multiome_object.rds
-# CELL_LABEL_COLUMN 需要改成 ANNOTATED_OBJECT 中真实存在的 metadata column。
-export CELL_LABEL_COLUMN=cell_annotation
-# ATAC_INPUT_LAYOUT 需要和真实 ATAC_DATA_ROOT 目录结构匹配。
-export ATAC_INPUT_LAYOUT=split_ge_arc
-export ATAC_DATA_ROOT=/absolute/path/to/atac_input_root
-```
-
-参数含义：
-
-```text
-CONDA_ROOT          conda/miniforge/miniconda/mambaforge/anaconda 根目录。
-ENV_NAME            安装器创建的 SCENIC+ 环境名。
-PROJECT_DIR         本次 SCENIC+ 分析根目录，所有 inputs/work/logs/results 都写在这里。
-ORGANISM            上方支持物种之一。
-AUTOZYME            on 或 off；控制 AutoZyme runtime 是否启用。
-ENSEMBL_RELEASE     准备 genome resources 使用的 Ensembl release。
-ANNOTATED_OBJECT    已注释且已经限定到本次 active cells 的 Seurat RDS/QS 或 AnnData h5ad。
-CELL_LABEL_COLUMN   annotated object 中作为 GRN cell label 的 metadata column。
-ATAC_INPUT_LAYOUT   上方支持的 ATAC 文件布局之一。
-ATAC_DATA_ROOT      ATAC fragments 和 peaks 所在根目录。
 ```
 
 0.2-运行已安装环境检查：
 
 ```bash
-mkdir -p "$PROJECT_DIR/logs"
-"$CONDA_ROOT/envs/$ENV_NAME/bin/spgrn-check" \
-  --conda-root "$CONDA_ROOT" \
-  --env-name "$ENV_NAME" \
-  2>&1 | tee "$PROJECT_DIR/logs/pre_step0_check_environment.log"
+spgrn-check
 ```
 
 0.3-初始化项目：
 
 ```bash
-"$CONDA_ROOT/envs/$ENV_NAME/bin/spgrn-initialize"
+spgrn-initialize
 ```
 
 0.4-激活环境并加载项目变量：
@@ -132,26 +63,63 @@ source "$CONDA_ROOT/bin/activate" "$ENV_NAME"
 source "$PROJECT_DIR/project_env.sh"
 ```
 
-继续前确认：
-
-```text
-scenicplus_project.env 和 project_env.sh 已生成。
-ANNOTATED_OBJECT 是本次真正要分析的 active object。
-ATAC_DATA_ROOT 指向同一批样本的 fragments 和 peaks。
-PROJECT_DIR 是专用分析目录，不是更大的父目录。
-```
-
 ## 1. 准备物种公共资源
 
-目的：准备 FASTA、GTF、chromsizes、SCENIC+ genome annotation、motif collection 和 motif2TF table。
+目的：确认目标物种在指定 Ensembl release 中同时有 FASTA 和 GTF，并准备 SCENIC+ 需要的 motif collection 与 motif2TF table。FASTA/GTF 来自 Ensembl；其余 SCENIC+ 所需标准资源由 workflow 派生并审计。
 
-生物信息学逻辑：SCENIC+ 会把 peaks、region sets、motif hits、enhancer-gene search space 和 gene annotations 放在同一个坐标系统里解释。这里统一使用 UCSC chromosome style，并只保留 standard primary chromosomes；random、unplaced、alt、haplotype 和 mitochondrial records 会被剔除。
-
-对于没有 Aerts public motif2TF table 的支持物种，脚本会使用 human HGNC v10 motif2TF table，通过 Ensembl BioMart one-to-one orthology 映射到目标物种，并输出 mapping audit。这个过程不是从头 motif discovery。
-
-1.1-准备 Step 0 选定物种：
+1.0-选择物种和 Ensembl release，并写入项目配置：
 
 ```bash
+# ENSEMBL_RELEASE 默认使用 115；如需其他版本，先用 --release 查询并输出可用物种 TSV。
+export ENSEMBL_RELEASE=115
+spgrn-query-organism-resources --list --release "$ENSEMBL_RELEASE"
+
+# ORGANISM 需要按查询结果修改。建议使用 Ensembl species name；常用别名如 mouse 也可识别。
+export ORGANISM=mus_musculus
+
+# 查询本次选择的物种资源状态。
+spgrn-query-organism-resources --organism "$ORGANISM" --release "$ENSEMBL_RELEASE"
+
+# 将 ORGANISM 和 ENSEMBL_RELEASE 写入 scenicplus_project.env 与 project_env.sh。
+spgrn-initialize
+source "$PROJECT_DIR/project_env.sh"
+```
+
+`--list` 会写出 `ensembl_release_<release>_organism_resources.tsv`，只包含同时有 FASTA 和 GTF 的 Ensembl species，并显示 motif2TF 准备策略。`--organism` 用于查看单个物种的 assembly、FASTA/GTF 可及性、motif collection 和 motif2TF 策略。
+
+1.1-准备资源。物种资源准备必须选择一种 motif2TF 路径：
+
+- direct：human、mouse、fly、chicken 有 Aerts v10 direct motif2TF table。
+
+```bash
+spgrn-prepare-official-resources
+```
+
+- mapping：其他物种可显式指定 `--ref human|mouse|fly|chicken`，通过 Ensembl BioMart orthology 映射并输出 audit。
+
+```bash
+spgrn-prepare-official-resources --ref human
+```
+
+如果研究对象存在明显 paralog 扩张，使用 paralog-aware orthology 策略，并检查 mapping audit：
+
+```bash
+spgrn-prepare-official-resources --ref human --orthology-policy paralog-aware
+```
+
+- generated：没有可靠 direct table 或默认映射时，可用 Aerts direct motif evidence 与目标物种 gene symbols 生成 audited symbol-evidence table。
+
+```bash
+spgrn-prepare-official-resources --generate-motif2tf
+```
+
+generated table 使用目标物种注释中实际存在的 gene symbols，严格匹配 Aerts direct human/mouse/fly/chicken motif2TF evidence，并输出覆盖率、来源和未匹配 TF 的 audit。它适合探索性非模式物种或跨物种比较初筛；正式结论应检查 `resources/<organism>/*_motif2tf_generated_symbol_audit.tsv`。
+
+- user table：已有人工审计过的 species-specific motif2TF table 时，直接提供该表。
+
+```bash
+# MOTIF2TF_TABLE 需要改成真实 motif_annotations.tbl 路径。
+export MOTIF2TF_TABLE=/absolute/path/to/motif_annotations.tbl
 spgrn-prepare-official-resources
 ```
 
@@ -178,8 +146,14 @@ spgrn-prepare-official-resources --motifs-only
 ```text
 resources/resource_manifest.json
 resources/resource_status.tsv
+resources/motif2tf/motif_annotations.<organism>.<strategy>[.<reference>].tbl
+resources/motif2tf/motif_annotations.<organism>.active.tsv
 inputs/cistarget_db/motif_annotations.tbl
+resources/<organism>/*_chromosome_audit.tsv
+resources/<organism>/*_motif2tf_*_audit.tsv
 ```
+
+`resources/motif2tf/` 中保留带物种和策略名的 canonical motif2TF table；`inputs/cistarget_db/motif_annotations.tbl` 是当前 active species 安装给 SCENIC+ 读取的标准文件名。
 
 ## 2. 检查并导出 active annotated object
 
@@ -187,9 +161,13 @@ inputs/cistarget_db/motif_annotations.tbl
 
 生物信息学逻辑：`CELL_LABEL_COLUMN` 决定 metacell aggregation、DAR calling、region-set 命名和 eRegulon AUC 汇总的生物学分组。它应该代表本次 GRN 想比较的主要细胞类型、状态或发育阶段。
 
-2.1-检查 annotated object：
+2.1-设置并检查 annotated object：
 
 ```bash
+# ANNOTATED_OBJECT 是已注释且已经限定到本次 active cells 的 Seurat RDS/QS 或 AnnData h5ad。
+export ANNOTATED_OBJECT=/absolute/path/to/active_annotated_multiome_object.rds
+spgrn-initialize
+source "$PROJECT_DIR/project_env.sh"
 spgrn-inspect-annotated-object
 ```
 
@@ -206,13 +184,17 @@ inputs/annotated_object_params.tsv
 inputs/annotated_h5ad_params.tsv
 ```
 
-2.3-导出 active RNA 和 metadata：
+2.3-设置 cell label 并导出 active RNA 和 metadata：
 
 ```bash
+# CELL_LABEL_COLUMN 是 annotated object 中作为 GRN cell label 的 metadata column。
+export CELL_LABEL_COLUMN=cell_annotation
+spgrn-initialize
+source "$PROJECT_DIR/project_env.sh"
 spgrn-export-annotated-object
 ```
 
-如果需要覆盖 Step 0 中的 cell label column：
+如果需要覆盖已选择的 cell label column：
 
 ```bash
 # corrected_metadata_column 需要手动修改为真实 metadata column 名称。
@@ -243,7 +225,7 @@ results/annotated_object/annotated_object_pre_export_review.md
 
 生物信息学逻辑：metacell 是统计单位，不是新的细胞类型。它应该在相同 sample 和 cell label 内构建，避免把不同谱系或状态平均在一起。
 
-本 workflow 默认 metacell 是必经步骤。安装包中的实现依赖 hdWGCNA 和 Seurat RDS/QS。如果 Step 2 从 h5ad 开始，需要在 `inputs/metacell_params.tsv` 中提供匹配的 Seurat 对象。
+本 workflow 默认 metacell 是必经步骤。该步骤依赖 hdWGCNA 和 Seurat RDS/QS。如果 Step 2 从 h5ad 开始，需要在 `inputs/metacell_params.tsv` 中提供匹配的 Seurat 对象。
 
 3.1-创建或更新 metacell 参数：
 
@@ -282,9 +264,45 @@ results/metacells/metacell_summary.tsv
 
 生物信息学逻辑：RNA 对象中的细胞必须能在 fragments 中找到可用 ATAC reads。这里确认 sample、barcode、fragment index 和 peak coordinates 一致。
 
+支持的 ATAC 输入布局：
+
+```text
+split_ge_arc
+  ATAC_DATA_ROOT/
+  |-- fragments/
+  |   |-- sample_1_arc/
+  |   |   |-- sample_1_A_fragments.tsv.gz
+  |   |   `-- sample_1_A_fragments.tsv.gz.tbi
+  |   `-- sample_2_arc/
+  |       |-- sample_2_A_fragments.tsv.gz
+  |       `-- sample_2_A_fragments.tsv.gz.tbi
+  `-- bed/
+      |-- sample_1_arc/
+      |   `-- sample_1_A_peaks.bed
+      `-- sample_2_arc/
+          `-- sample_2_A_peaks.bed
+
+cellranger_outs
+  ATAC_DATA_ROOT/
+  |-- sample_1/
+  |   `-- outs/
+  |       |-- fragments.tsv.gz
+  |       |-- fragments.tsv.gz.tbi
+  |       `-- peaks.bed
+  `-- sample_2/
+      `-- outs/
+          |-- fragments.tsv.gz
+          |-- fragments.tsv.gz.tbi
+          `-- peaks.bed
+```
+
 4.1-注册 ATAC 输入参数：
 
 ```bash
+# ATAC_INPUT_LAYOUT 是支持的 ATAC 文件布局之一，需要和 ATAC_DATA_ROOT 目录结构匹配。
+export ATAC_INPUT_LAYOUT=split_ge_arc
+# ATAC_DATA_ROOT 是 ATAC fragments 和 peaks 所在根目录。
+export ATAC_DATA_ROOT=/absolute/path/to/atac_input_root
 spgrn-set-atac-input-params
 ```
 
@@ -438,7 +456,7 @@ results/cistarget_db/custom_cistarget_db_manifest.tsv
 
 ## 8. 初始化 SCENIC+ Snakemake
 
-目的：把 RNA、ATAC、region sets、custom cisTarget database 和 genome annotation 写入 SCENIC+ Snakemake 配置。
+目的：把 RNA、ATAC、region sets、custom cisTarget database 和物种资源写入 SCENIC+ Snakemake 配置。
 
 生物信息学逻辑：SCENIC+ 在所有 active metacells 上共同建立 shared eRegulon universe。多个 condition 应合并在这一步一起运行；condition-specific effects 在 Step 11 使用 shared AUC matrix 检验。
 
@@ -456,7 +474,7 @@ work/scenicplus/organism_config.yaml
 inputs/scenicplus_config_params.tsv
 ```
 
-通常需要按研究设计检查：
+可按研究设计调整的核心参数：
 
 ```text
 seed
@@ -504,7 +522,7 @@ spgrn-setup-workflow-params --section preflight
 9.2-运行 preflight：
 
 ```bash
-spgrn-preflight-scenicplus-inputs 2>&1 | tee "$PROJECT_DIR/logs/preflight_scenicplus_inputs.log"
+spgrn-preflight-scenicplus-inputs
 ```
 
 9.3-记录软件版本和资源 checksum：
@@ -517,7 +535,7 @@ spgrn-record-scenicplus-provenance
 
 ```text
 inputs/preflight_thresholds.tsv
-logs/preflight_scenicplus_inputs.log
+logs/preflight_scenicplus_inputs_*.log
 results/provenance/
 ```
 

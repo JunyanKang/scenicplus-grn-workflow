@@ -1,4 +1,5 @@
 from pathlib import Path
+from datetime import datetime
 import os
 import sys
 
@@ -21,6 +22,27 @@ if any(arg in {"-h", "--help"} for arg in sys.argv[1:]):
         "inputs/cistopic_obj.pkl, region sets, cisTarget databases and motif annotations."
     )
     raise SystemExit(0)
+
+
+class Tee:
+    def __init__(self, *streams):
+        self.streams = streams
+
+    def write(self, data):
+        for stream in self.streams:
+            stream.write(data)
+            stream.flush()
+
+    def flush(self):
+        for stream in self.streams:
+            stream.flush()
+
+
+log_dir = PROJECT / "logs"
+log_dir.mkdir(parents=True, exist_ok=True)
+log_handle = (log_dir / f"preflight_scenicplus_inputs_{datetime.now():%Y%m%d_%H%M%S}.log").open("w")
+sys.stdout = Tee(sys.stdout, log_handle)
+sys.stderr = Tee(sys.stderr, log_handle)
 
 
 def p(path: str) -> Path:

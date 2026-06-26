@@ -27,109 +27,42 @@ Aerts cisTarget resources: https://resources.aertslab.org/cistarget/
 
 ## 0. Initialize Environment And Project
 
-Purpose: define the runtime environment, organism, active object, cell-label
-column and ATAC input directory. The values are recorded in
-`$PROJECT_DIR/scenicplus_project.env` and `$PROJECT_DIR/project_env.sh`.
+Purpose: define the conda environment and project directory. These values are
+recorded in `$PROJECT_DIR/scenicplus_project.env` and
+`$PROJECT_DIR/project_env.sh`; later steps append organism, annotated object,
+cell-label and ATAC input settings when they become relevant.
 
-Bioinformatics rationale: SCENIC+ links TFs, regulatory regions and target
-genes. Wrong cell scope, genome build or barcode definition makes the final GRN
-biologically uninterpretable even if every command finishes.
-
-Supported organisms:
-
-```text
-human      Homo sapiens GRCh38, chr1-chr22, chrX, chrY
-mouse      Mus musculus GRCm39, chr1-chr19, chrX, chrY
-cyno       Macaca fascicularis 6.0, chr1-chr20, chrX
-rat        Rattus norvegicus GRCr8, chr1-chr20, chrX, chrY
-rabbit     Oryctolagus cuniculus OryCun2.0, chr1-chr21, chrX
-chicken    Gallus gallus GRCg7b, chr1-chr39, chrZ, chrW
-zebrafish  Danio rerio GRCz11, chr1-chr25
-```
-
-Supported ATAC input layouts:
-
-```text
-split_ge_arc
-  ATAC_DATA_ROOT/
-  |-- fragments/
-  |   |-- sample_1_arc/
-  |   |   |-- sample_1_A_fragments.tsv.gz
-  |   |   `-- sample_1_A_fragments.tsv.gz.tbi
-  |   `-- sample_2_arc/
-  |       |-- sample_2_A_fragments.tsv.gz
-  |       `-- sample_2_A_fragments.tsv.gz.tbi
-  `-- bed/
-      |-- sample_1_arc/
-      |   `-- sample_1_A_peaks.bed
-      `-- sample_2_arc/
-          `-- sample_2_A_peaks.bed
-
-cellranger_outs
-  ATAC_DATA_ROOT/
-  |-- sample_1/
-  |   `-- outs/
-  |       |-- fragments.tsv.gz
-  |       |-- fragments.tsv.gz.tbi
-  |       `-- peaks.bed
-  `-- sample_2/
-      `-- outs/
-          |-- fragments.tsv.gz
-          |-- fragments.tsv.gz.tbi
-          `-- peaks.bed
-```
+Bioinformatics rationale: first fix the runtime and output directory. Each
+later step writes its own parameters only when the relevant biological input is
+known, reducing the chance of carrying a wrong object or ATAC directory through
+the full workflow.
 
 0.1-Enter project parameters:
 
 ```bash
 # Replace every value in this block before running.
-# /absolute/path/to/conda must be the real conda/miniforge/miniconda root.
+# CONDA_ROOT is the real conda/miniforge/miniconda/mambaforge/anaconda root.
 export CONDA_ROOT=/absolute/path/to/conda
+# ENV_NAME is the SCENIC+ environment created by the workflow installation.
 export ENV_NAME=scenicplus-grn
-# PROJECT_DIR must be a dedicated SCENIC+ analysis directory.
+# Add installed workflow commands to this terminal PATH.
+export PATH="$CONDA_ROOT/envs/$ENV_NAME/bin:$PATH"
+# PROJECT_DIR is the dedicated SCENIC+ analysis root; inputs/work/logs/results are written there.
 export PROJECT_DIR=/absolute/path/to/grn_project/scenicplus_analysis
-# ORGANISM must be one supported key listed above.
-export ORGANISM=mouse
+# AUTOZYME is on or off.
 export AUTOZYME=on
-export ENSEMBL_RELEASE=115
-# ANNOTATED_OBJECT must be the active annotated object for this analysis.
-export ANNOTATED_OBJECT=/absolute/path/to/active_annotated_multiome_object.rds
-# CELL_LABEL_COLUMN must be a real metadata column in ANNOTATED_OBJECT.
-export CELL_LABEL_COLUMN=cell_annotation
-# ATAC_INPUT_LAYOUT must match the real ATAC_DATA_ROOT structure.
-export ATAC_INPUT_LAYOUT=split_ge_arc
-export ATAC_DATA_ROOT=/absolute/path/to/atac_input_root
-```
-
-Parameter meanings:
-
-```text
-CONDA_ROOT          Conda/miniforge/miniconda/mambaforge/anaconda root.
-ENV_NAME            SCENIC+ environment name.
-PROJECT_DIR         Dedicated SCENIC+ analysis root.
-ORGANISM            One supported organism key.
-AUTOZYME            on or off.
-ENSEMBL_RELEASE     Ensembl release used for public genome resources.
-ANNOTATED_OBJECT    Active annotated Seurat RDS/QS or AnnData h5ad object.
-CELL_LABEL_COLUMN   Metadata column used as the SCENIC+ cell label.
-ATAC_INPUT_LAYOUT   One supported ATAC file layout.
-ATAC_DATA_ROOT      Root directory containing ATAC fragments and peaks.
 ```
 
 0.2-Check the installed environment:
 
 ```bash
-mkdir -p "$PROJECT_DIR/logs"
-"$CONDA_ROOT/envs/$ENV_NAME/bin/spgrn-check" \
-  --conda-root "$CONDA_ROOT" \
-  --env-name "$ENV_NAME" \
-  2>&1 | tee "$PROJECT_DIR/logs/pre_step0_check_environment.log"
+spgrn-check
 ```
 
 0.3-Initialize the project:
 
 ```bash
-"$CONDA_ROOT/envs/$ENV_NAME/bin/spgrn-initialize"
+spgrn-initialize
 ```
 
 0.4-Activate the environment and load project variables:
@@ -139,31 +72,72 @@ source "$CONDA_ROOT/bin/activate" "$ENV_NAME"
 source "$PROJECT_DIR/project_env.sh"
 ```
 
-Before continuing, confirm:
-
-```text
-scenicplus_project.env and project_env.sh exist.
-ANNOTATED_OBJECT is the active object intended for this GRN analysis.
-ATAC_DATA_ROOT contains fragments and peaks from the same samples.
-PROJECT_DIR is a dedicated analysis directory.
-```
-
 ## 1. Prepare Organism Resources
 
-Purpose: prepare FASTA, GTF, chromsizes, SCENIC+ genome annotation, motif
-collection and motif2TF tables.
+Purpose: confirm that the study organism has both FASTA and GTF in the
+selected Ensembl release, then prepare the motif collection and motif2TF table
+needed by SCENIC+. FASTA/GTF come from Ensembl; the remaining SCENIC+ standard
+resources are derived and audited by the workflow.
 
-Bioinformatics rationale: peaks, region sets, motif hits, enhancer-gene search
-space and gene annotations must use one coordinate system. This workflow uses
-UCSC chromosome style and keeps standard primary chromosomes only.
-
-For supported organisms without an Aerts public motif2TF table, the script uses
-the human HGNC v10 motif2TF table and Ensembl BioMart one-to-one orthology to
-map TF names to the target organism. This is not de novo motif discovery.
-
-1.1-Prepare resources for the organism selected in Step 0:
+1.0-Select organism and Ensembl release, then write them to the project config:
 
 ```bash
+# ENSEMBL_RELEASE defaults to 115; use --release first to query another release and write the available-species TSV.
+export ENSEMBL_RELEASE=115
+spgrn-query-organism-resources --list --release "$ENSEMBL_RELEASE"
+
+# ORGANISM must be edited after checking the query output. Ensembl species names are preferred.
+export ORGANISM=mus_musculus
+
+# Query the selected organism.
+spgrn-query-organism-resources --organism "$ORGANISM" --release "$ENSEMBL_RELEASE"
+
+# Write ORGANISM and ENSEMBL_RELEASE to scenicplus_project.env and project_env.sh.
+spgrn-initialize
+source "$PROJECT_DIR/project_env.sh"
+```
+
+`--list` writes `ensembl_release_<release>_organism_resources.tsv` with only Ensembl species that have both FASTA and GTF and reports the
+motif2TF preparation strategy. Use `--organism` to inspect the assembly,
+FASTA/GTF availability, motif collection and motif2TF strategy for one species.
+
+1.1-Prepare resources. Choose one motif2TF route:
+
+- direct: human, mouse, fly and chicken have Aerts v10 direct motif2TF tables.
+
+```bash
+spgrn-prepare-official-resources
+```
+
+- mapping: other species can be explicitly mapped with `--ref human|mouse|fly|chicken` through Ensembl BioMart orthology and audit files.
+
+```bash
+spgrn-prepare-official-resources --ref human
+```
+
+For organisms with extensive paralog expansion, use the paralog-aware policy
+and review the mapping audit:
+
+```bash
+spgrn-prepare-official-resources --ref human --orthology-policy paralog-aware
+```
+
+- generated: for organisms without a direct table or safe default mapping, build an audited symbol-evidence table from Aerts direct motif evidence and target gene symbols.
+
+```bash
+spgrn-prepare-official-resources --generate-motif2tf
+```
+
+Generated tables strictly match target annotation gene symbols against Aerts
+direct human/mouse/fly/chicken motif2TF evidence. Review
+`resources/<organism>/*_motif2tf_generated_symbol_audit.tsv` before treating
+the table as biological evidence.
+
+- user table: if a manually reviewed species-specific motif2TF table already exists, provide that table.
+
+```bash
+# MOTIF2TF_TABLE must be edited to the real motif_annotations.tbl path.
+export MOTIF2TF_TABLE=/absolute/path/to/motif_annotations.tbl
 spgrn-prepare-official-resources
 ```
 
@@ -190,8 +164,16 @@ Main outputs:
 ```text
 resources/resource_manifest.json
 resources/resource_status.tsv
+resources/motif2tf/motif_annotations.<organism>.<strategy>[.<reference>].tbl
+resources/motif2tf/motif_annotations.<organism>.active.tsv
 inputs/cistarget_db/motif_annotations.tbl
+resources/<organism>/*_chromosome_audit.tsv
+resources/<organism>/*_motif2tf_*_audit.tsv
 ```
+
+The strategy-named table under `resources/motif2tf/` is the canonical copy.
+`inputs/cistarget_db/motif_annotations.tbl` remains the standard SCENIC+ input
+file for the current active species.
 
 ## 2. Inspect And Export The Active Annotated Object
 
@@ -203,9 +185,13 @@ Bioinformatics rationale: `CELL_LABEL_COLUMN` controls metacell aggregation,
 DAR calling, region-set naming and eRegulon AUC summaries. It should represent
 the main cell type, state or developmental stage used for the GRN analysis.
 
-2.1-Inspect the annotated object:
+2.1-Set and inspect the annotated object:
 
 ```bash
+# ANNOTATED_OBJECT is the active annotated Seurat RDS/QS or AnnData h5ad object.
+export ANNOTATED_OBJECT=/absolute/path/to/active_annotated_multiome_object.rds
+spgrn-initialize
+source "$PROJECT_DIR/project_env.sh"
 spgrn-inspect-annotated-object
 ```
 
@@ -222,13 +208,17 @@ inputs/annotated_object_params.tsv
 inputs/annotated_h5ad_params.tsv
 ```
 
-2.3-Export active RNA and metadata:
+2.3-Set cell label and export active RNA and metadata:
 
 ```bash
+# CELL_LABEL_COLUMN is the metadata column used as the SCENIC+ cell label.
+export CELL_LABEL_COLUMN=cell_annotation
+spgrn-initialize
+source "$PROJECT_DIR/project_env.sh"
 spgrn-export-annotated-object
 ```
 
-To override the Step 0 cell-label column:
+To override the selected cell-label column:
 
 ```bash
 # corrected_metadata_column must be replaced with a real metadata column name.
@@ -307,9 +297,45 @@ Bioinformatics rationale: cells exported from the RNA object must have matched
 ATAC reads in the fragment files. This step aligns sample IDs, barcodes,
 fragment indexes and peak coordinates.
 
+Supported ATAC input layouts:
+
+```text
+split_ge_arc
+  ATAC_DATA_ROOT/
+  |-- fragments/
+  |   |-- sample_1_arc/
+  |   |   |-- sample_1_A_fragments.tsv.gz
+  |   |   `-- sample_1_A_fragments.tsv.gz.tbi
+  |   `-- sample_2_arc/
+  |       |-- sample_2_A_fragments.tsv.gz
+  |       `-- sample_2_A_fragments.tsv.gz.tbi
+  `-- bed/
+      |-- sample_1_arc/
+      |   `-- sample_1_A_peaks.bed
+      `-- sample_2_arc/
+          `-- sample_2_A_peaks.bed
+
+cellranger_outs
+  ATAC_DATA_ROOT/
+  |-- sample_1/
+  |   `-- outs/
+  |       |-- fragments.tsv.gz
+  |       |-- fragments.tsv.gz.tbi
+  |       `-- peaks.bed
+  `-- sample_2/
+      `-- outs/
+          |-- fragments.tsv.gz
+          |-- fragments.tsv.gz.tbi
+          `-- peaks.bed
+```
+
 4.1-Register ATAC input parameters:
 
 ```bash
+# ATAC_INPUT_LAYOUT is one supported ATAC layout and must match ATAC_DATA_ROOT.
+export ATAC_INPUT_LAYOUT=split_ge_arc
+# ATAC_DATA_ROOT is the root directory containing ATAC fragments and peaks.
+export ATAC_DATA_ROOT=/absolute/path/to/atac_input_root
 spgrn-set-atac-input-params
 ```
 
@@ -554,7 +580,7 @@ spgrn-setup-workflow-params --section preflight
 9.2-Run preflight:
 
 ```bash
-spgrn-preflight-scenicplus-inputs 2>&1 | tee "$PROJECT_DIR/logs/preflight_scenicplus_inputs.log"
+spgrn-preflight-scenicplus-inputs
 ```
 
 9.3-Record software versions and resource checksums:
@@ -567,7 +593,7 @@ Main outputs:
 
 ```text
 inputs/preflight_thresholds.tsv
-logs/preflight_scenicplus_inputs.log
+logs/preflight_scenicplus_inputs_*.log
 results/provenance/
 ```
 

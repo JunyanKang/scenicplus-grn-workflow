@@ -1,6 +1,6 @@
 # SCENIC+ GRN Version Lock
 
-This installer pins the GRN analysis environment to the successful local dry-run combination validated on 2026-06-09. The macOS arm64 recipe keeps the local lock. The Linux recipe is conda-first and uses a CentOS7/glibc 2.17-compatible lock for packages whose newest Linux builds no longer solve cleanly on older servers.
+This workflow pins the GRN analysis environment to the successful local dry-run combination validated on 2026-06-09. The macOS arm64 recipe keeps the local lock. The Linux recipe is conda-first and uses a CentOS7/glibc 2.17-compatible lock for packages whose newest Linux builds no longer solve cleanly on older servers.
 
 For Linux, `config/environment-linux-64.yml` pins top-level package versions and `config/locks/environment-linux-64.solved-lock.yml` records the full dry-run solution with transitive dependency build strings.
 
@@ -9,7 +9,7 @@ is expanded at runtime to `.vendor/github/*.tar.gz`. During installation the
 script tries GitHub first, then falls back to these bundled archives after the
 configured retry count. The bundled archives are listed in
 `.vendor/github/SHA256SUMS` after expansion and checksum-validated before use. For
-packages that derive their version from git metadata, the installer passes the
+packages that derive their version from git metadata, the installation passes the
 pinned versions to setuptools-scm during local archive installation, so the offline
 tarballs do not need a `.git` directory.
 
@@ -148,4 +148,4 @@ ggraph                       2.2.2
 
 ## Pinned Pip Dependencies
 
-The full pip pin set is in `config/pip-constraints.txt`. The installer uses this constraints file and force-reinstalls the pinned pip layer.
+The full pip pin set is in `config/pip-constraints.txt`. The installation uses this constraints file and force-reinstalls the pinned pip layer.

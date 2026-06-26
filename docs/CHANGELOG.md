@@ -1,5 +1,161 @@
 # Changelog
 
+## 0.1.52 - 2026-06-26
+
+Renames the release package to `scenicplus-grn-workflow`.
+
+Highlights:
+
+- Repositions the project as a SCENIC+ GRN workflow toolkit rather than only an
+  installer.
+- Updates README, install examples, relocation path and release package naming
+  to `scenicplus-grn-workflow`.
+- Keeps the conda environment name `scenicplus-grn` and command prefix
+  `spgrn-*` unchanged.
+
+## 0.1.51 - 2026-06-26
+
+Tightens release documentation and preflight logging.
+
+Highlights:
+
+- Places each `spgrn-prepare-official-resources` command directly under its
+  motif2TF route in the workflow guide.
+- Removes shell-level `tee` from the preflight step; the command now writes its
+  own timestamped log under `$PROJECT_DIR/logs/`.
+- Simplifies user-facing resource wording in the README and workflow guide.
+
+## 0.1.50 - 2026-06-26
+
+Completes Step 5-11 command hardening.
+
+Highlights:
+
+- Tests all documented Step 5-11 `spgrn-*` commands for missing-input behavior.
+- Ensures pycisTopic exits immediately with a concise missing-input message
+  instead of importing heavy packages first.
+- Ensures SCENIC+ Snakemake initialization routes internal Python helper calls
+  through the shared entrypoint runner.
+- Adds `organism_resources.py` and `run_python_entrypoint.py` to installation
+  completeness checks.
+
+## 0.1.49 - 2026-06-26
+
+Hardens command entry points for release use.
+
+Highlights:
+
+- Adds a shared Python entrypoint runner so installed `spgrn-*` Python commands
+  report concise `ERROR:` messages instead of raw tracebacks for missing inputs.
+- Removes the obsolete cynomolgus-only motif2TF helper; motif2TF preparation is
+  now centralized in `spgrn-prepare-official-resources`.
+- Fixes `spgrn-check-workflow-installation` so it works from the installed
+  `spgrn-*` command without manually exporting `CONDA_PREFIX`.
+- Updates `spgrn-prepare-scenicplus-organism-files` to accept Ensembl species
+  names and common aliases.
+- Adds fast missing-input checks to pycisTopic and postprocess entry points.
+- Makes repeated `spgrn-initialize` calls skip the expensive environment check
+  when a check log already exists.
+
+## 0.1.48 - 2026-06-26
+
+Improves organism resource listing usability.
+
+Highlights:
+
+- `spgrn-query-organism-resources --list` now writes the full Ensembl species
+  resource table to TSV and prints only the output path, release and species
+  count.
+- Updates the workflow guide so Ensembl release selection and available-species
+  TSV generation are one explicit step.
+
+## 0.1.47 - 2026-06-26
+
+Makes organism resources release-consistent.
+
+Highlights:
+
+- `spgrn-query-organism-resources --list` now reports Ensembl species names
+  directly, without a user-facing preset column.
+- `spgrn-prepare-official-resources` now accepts any listed Ensembl species
+  name, while common aliases are normalized to Ensembl species names during
+  project initialization.
+- Adds audited generated motif2TF table support through
+  `--generate-motif2tf`, using Aerts direct motif evidence and target genome
+  annotation gene symbols.
+- Names canonical motif2TF copies by species and strategy, while preserving
+  `inputs/cistarget_db/motif_annotations.tbl` as the active SCENIC+ input.
+- Adds chromosome allowlist audit output for non-curated Ensembl species.
+
+## 0.1.46 - 2026-06-26
+
+Simplifies organism list output.
+
+Highlights:
+
+- `spgrn-query-organism-resources --list` now omits FASTA/GTF columns because
+  list mode already filters to species with both resources.
+- Removes the constant motif collection column and long source notes from list
+  mode; the table now focuses on species, preset and motif2TF strategy.
+
+## 0.1.45 - 2026-06-26
+
+Tightens organism resource listing.
+
+Highlights:
+
+- `spgrn-query-organism-resources --list` now lists only Ensembl species
+  present in both the release FASTA and GTF directories.
+- The `gtf` column in list mode now reports confirmed `yes` instead of
+  `unknown`.
+
+## 0.1.44 - 2026-06-26
+
+Simplifies the installed-environment check step.
+
+Highlights:
+
+- Step 0.2 now runs as a single `spgrn-check` command.
+- `spgrn-check` writes its own timestamped log under `$PROJECT_DIR/logs/` when
+  `PROJECT_DIR` is set.
+- Step 0.1 adds the installed environment `bin` directory to `PATH`, so
+  `spgrn-*` commands can be called directly before activation.
+
+## 0.1.43 - 2026-06-26
+
+Aligns the workflow guide with the staged project-parameter flow.
+
+Highlights:
+
+- Step 0 now records only conda environment and project directory settings.
+- Step 1 records `ORGANISM` and `ENSEMBL_RELEASE` after resource lookup.
+- Step 2 records `ANNOTATED_OBJECT` and `CELL_LABEL_COLUMN` before object
+  inspection/export.
+- Step 4 records `ATAC_INPUT_LAYOUT` and `ATAC_DATA_ROOT`, with ATAC layout
+  examples moved into the ATAC section.
+- Removes obsolete motif2TF helper commands from the release surface; resource
+  lookup and preparation use `spgrn-query-organism-resources` and
+  `spgrn-prepare-official-resources`.
+
+## 0.1.40 - 2026-06-26
+
+Adds auditable motif2TF strategy handling for cross-species SCENIC+ projects.
+
+Highlights:
+
+- Adds direct Aerts v10 motif2TF handling for human, mouse, fly and chicken.
+- Adds built-in genome presets for rhesus macaque, pig, cow and dog.
+- Allows orthology mapping from human, mouse, fly or chicken when explicitly
+  selected.
+- Adds `MOTIF2TF_TABLE` support for user-provided species-specific motif2TF
+  tables.
+- Adds `spgrn-query-organism-resources` for Ensembl release species lookup and
+  per-organism FASTA/GTF/motif resource status reporting.
+- Consolidates motif2TF direct-table, reference-mapping and user-table
+  preparation under `spgrn-prepare-official-resources`.
+- Clarifies in the workflow guide that Step 0 is project initialization, while
+  genome and motif resources are Step 1.
+
 ## 0.1.39 - 2026-06-26
 
 Simplifies the Chinese README landing page.
@@ -373,7 +529,7 @@ Highlights:
 
 ## 0.1.0 - 2026-06-23
 
-Initial version-controlled release of the reusable `scenicplus-grn-installer`.
+Initial version-controlled release of the reusable `scenicplus-grn-workflow`.
 
 Highlights:
 

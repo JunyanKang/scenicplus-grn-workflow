@@ -48,15 +48,15 @@ Usage:
   bash install.sh
 
 Recommended workflow:
-  tar -xzf scenicplus-grn-installer.tar.gz
-  cd scenicplus-grn-installer
+  tar -xzf scenicplus-grn-workflow.tar.gz
+  cd scenicplus-grn-workflow
   bash install.sh
 
 The script detects a conda/miniforge/miniconda/mamba-style root, asks for
 confirmation, checks write permissions, then creates or updates a dedicated
-scenicplus-grn conda environment. If the installer was unpacked in a random
+scenicplus-grn conda environment. If the workflow package was unpacked in a random
 directory, it offers to copy itself to:
-  $CONDA_ROOT/share/scenicplus-grn-installer
+  $CONDA_ROOT/share/scenicplus-grn-workflow
 
 Modes:
   MODE=new      Create/update a dedicated scenicplus-grn conda environment.
@@ -75,7 +75,7 @@ Options:
   ALLOW_BASE=1                  Allow MODE=active installation into base.
   ASSUME_YES=1                  Accept detected defaults without prompts.
   AUTO_INSTALL_MAMBA=0          Do not bootstrap mamba into conda base.
-  RELOCATE_INSTALLER=0          Do not offer to copy installer under conda root.
+  RELOCATE_INSTALLER=0          Do not offer to copy workflow package under conda root.
   PRECHECK_ONLY=1               Check detection/permissions and exit before install.
   LOG_DIR=/path/to/logs         Override installation log directory.
 EOF
@@ -90,13 +90,13 @@ setup_logging() {
   local stamp
   stamp="$(date +%Y%m%d_%H%M%S)"
   if ! mkdir -p "$LOG_DIR" 2>/dev/null; then
-    LOG_DIR="${TMPDIR:-/tmp}/scenicplus-grn-installer-logs"
+    LOG_DIR="${TMPDIR:-/tmp}/scenicplus-grn-workflow-logs"
     mkdir -p "$LOG_DIR"
   fi
   LOG_FILE="$LOG_DIR/install_${stamp}_$$.log"
   touch "$LOG_FILE"
   exec > >(tee -a "$LOG_FILE") 2>&1
-  echo "SCENIC+ GRN installer log: $LOG_FILE"
+  echo "SCENIC+ GRN workflow install log: $LOG_FILE"
   echo "Started: $(date)"
   echo "Installer directory: $SCRIPT_DIR"
 }
@@ -245,6 +245,7 @@ path_is_inside() {
 
 copy_distribution_assets() {
   local target_dir="$1"
+  rm -rf "$target_dir/bin" "$target_dir/config" "$target_dir/docs"
   mkdir -p "$target_dir/bin"
   mkdir -p "$target_dir/config/locks"
   mkdir -p "$target_dir/docs"
@@ -293,19 +294,19 @@ copy_distribution_assets() {
 }
 
 copy_to_conda_share_if_needed() {
-  local target_dir="$CONDA_ROOT/share/scenicplus-grn-installer"
+  local target_dir="$CONDA_ROOT/share/scenicplus-grn-workflow"
   if [[ "$RELOCATE_INSTALLER" != "1" || "${SCENICPLUS_INSTALLER_RELOCATED:-0}" == "1" ]]; then
     return
   fi
   if path_is_inside "$SCRIPT_DIR" "$CONDA_ROOT"; then
-    echo "Installer is already under conda root."
+    echo "Workflow package is already under conda root."
     return
   fi
 
-  echo "Installer is not under the detected conda root."
-  echo "Current installer directory: $SCRIPT_DIR"
-  echo "Recommended installer directory: $target_dir"
-  if ! confirm "Copy installer to the recommended directory and continue there?" "y"; then
+  echo "Workflow package is not under the detected conda root."
+  echo "Current workflow package directory: $SCRIPT_DIR"
+  echo "Recommended workflow package directory: $target_dir"
+  if ! confirm "Copy workflow package to the recommended directory and continue there?" "y"; then
     echo "Continuing from current directory."
     return
   fi
@@ -314,8 +315,8 @@ copy_to_conda_share_if_needed() {
   mkdir -p "$CONDA_ROOT/share"
   mkdir -p "$target_dir"
   copy_distribution_assets "$target_dir"
-  chmod +x "$target_dir/install.sh" "$target_dir/bin/check_environment.sh" "$target_dir/bin/initialize_scenicplus_project.sh" "$target_dir/bin/install_r.R"
-  echo "Copied installer to: $target_dir"
+  chmod +x "$target_dir/install.sh" "$target_dir/bin/check_environment.sh" "$target_dir/bin/initialize_scenicplus_project.sh" "$target_dir/bin/install_r.R" "$target_dir/bin/run_python_entrypoint.py"
+  echo "Copied workflow package to: $target_dir"
   echo "Re-running from recommended directory."
   export SCENICPLUS_INSTALLER_RELOCATED=1
   exec bash "$target_dir/install.sh" "$@"
@@ -327,7 +328,7 @@ install_env_wrappers() {
   local script_dir="$share_dir/scripts"
   local script base cmd wrapper
   mkdir -p "$env_bin"
-  rm -f "$env_bin"/scenicplus-grn-*
+  rm -f "$env_bin"/scenicplus-grn-* "$env_bin"/spgrn-*
 
   cat > "$env_bin/spgrn-check" <<'EOF'
 #!/usr/bin/env bash
@@ -349,7 +350,7 @@ EOF
       cat > "$wrapper" <<EOF
 #!/usr/bin/env bash
 set -euo pipefail
-exec "\$(dirname "\${BASH_SOURCE[0]}")/python" "\$(dirname "\${BASH_SOURCE[0]}")/../share/scenicplus-grn/scripts/$base.py" "\$@"
+exec "\$(dirname "\${BASH_SOURCE[0]}")/python" "\$(dirname "\${BASH_SOURCE[0]}")/../share/scenicplus-grn/bin/run_python_entrypoint.py" "\$(dirname "\${BASH_SOURCE[0]}")/../share/scenicplus-grn/scripts/$base.py" "\$@"
 EOF
       chmod +x "$wrapper"
     done
@@ -470,7 +471,7 @@ stage_if_running_from_target_prefix() {
   if [[ "$SCRIPT_DIR" == "$target_prefix/"* ]] && [[ "$FORCE" == "1" || ! -d "$target_prefix/conda-meta" ]]; then
     local staged_parent
     staged_parent="$(mktemp -d)"
-    local staged="$staged_parent/scenicplus-grn-installer"
+    local staged="$staged_parent/scenicplus-grn-workflow"
     cp -a "$SCRIPT_DIR" "$staged"
     if [[ ! -d "$target_prefix/conda-meta" ]]; then
       rm -rf "$target_prefix"

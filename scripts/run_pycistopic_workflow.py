@@ -17,6 +17,10 @@ os.environ.setdefault("MPLCONFIGDIR", str(PROJECT / "tmp" / "matplotlib"))
 os.environ.setdefault("NUMBA_CACHE_DIR", str(PROJECT / "tmp" / "numba"))
 (PROJECT / "tmp" / "matplotlib").mkdir(parents=True, exist_ok=True)
 (PROJECT / "tmp" / "numba").mkdir(parents=True, exist_ok=True)
+INPUTS = PROJECT / "inputs"
+WORK = PROJECT / "work" / "pycistopic"
+RESULTS = PROJECT / "results" / "pycistopic"
+LOGS = PROJECT / "logs"
 
 if any(arg in {"-h", "--help"} for arg in sys.argv[1:]):
     print(
@@ -27,6 +31,20 @@ if any(arg in {"-h", "--help"} for arg in sys.argv[1:]):
         "$PROJECT_DIR and the parameter tables created by setup_workflow_params.py."
     )
     raise SystemExit(0)
+
+required_start_files = [
+    INPUTS / "pycistopic_params.tsv",
+    INPUTS / "sample_sheet.tsv",
+    INPUTS / "cell_metadata.tsv",
+    INPUTS / "topic_model_grid.tsv",
+    INPUTS / "atac_qc_thresholds.tsv",
+]
+missing_start = [str(path) for path in required_start_files if not path.exists() or path.stat().st_size == 0]
+if missing_start:
+    raise SystemExit(
+        "ERROR: pycisTopic inputs are not ready. Run setup/ATAC preparation first. Missing: "
+        + ", ".join(missing_start)
+    )
 
 import numpy as np
 import pandas as pd
@@ -91,11 +109,6 @@ from pycisTopic.iterative_peak_calling import get_consensus_peaks
 from pycisTopic.lda_models import evaluate_models, run_cgs_models, run_cgs_models_mallet
 from pycisTopic.pseudobulk_peak_calling import export_pseudobulk, peak_calling
 from pycisTopic.topic_binarization import binarize_topics
-
-INPUTS = PROJECT / "inputs"
-WORK = PROJECT / "work" / "pycistopic"
-RESULTS = PROJECT / "results" / "pycistopic"
-LOGS = PROJECT / "logs"
 
 
 class Tee:

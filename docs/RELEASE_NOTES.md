@@ -1,8 +1,8 @@
 # Release Notes
 
-## scenicplus-grn-installer v0.1.39
+## scenicplus-grn-workflow
 
-This release packages a reproducible SCENIC+/GRN conda installer and a strict matched snRNA+snATAC workflow for annotated scMultiome projects.
+This release packages a reproducible SCENIC+/GRN workflow toolkit with a conda installer and a strict matched snRNA+snATAC workflow for annotated scMultiome projects.
 
 Main deliverables:
 
@@ -81,6 +81,17 @@ Main deliverables:
   two-condition and multi-condition projects explicitly, and optional
   `priority_eregulons` labels keep project-specific volcano priorities in the
   project parameter file rather than in installer defaults.
+- motif2TF preparation now separates direct Aerts public tables,
+  human/mouse/fly/chicken orthology mapping and user-provided species-specific
+  tables under `spgrn-prepare-official-resources`.
+- `spgrn-query-organism-resources` reports Ensembl release species support and
+  per-organism FASTA/GTF/motif resource status.
+- Step 0 now initializes only the environment and project root; organism,
+  annotated object, cell label and ATAC input settings are written in the
+  steps where they are first used.
+- Obsolete standalone motif2TF helper commands were removed from the release
+  surface. Resource lookup and motif2TF preparation now use
+  `spgrn-query-organism-resources` and `spgrn-prepare-official-resources`.
 
 The installer is intended to be unpacked anywhere, copied under a conda-style root when requested, and run with:
 

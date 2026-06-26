@@ -11,6 +11,7 @@ from pathlib import Path
 
 PROJECT = Path(os.environ.get("PROJECT_DIR", ".")).expanduser().resolve()
 SCRIPT_DIR = Path(__file__).resolve().parent
+RUNNER = SCRIPT_DIR.parent / "bin" / "run_python_entrypoint.py"
 
 
 def patch_snakefile_for_stage_threads(path: Path) -> None:
@@ -29,6 +30,18 @@ def patch_snakefile_for_stage_threads(path: Path) -> None:
         print(f"PATCHED stage-specific motif-enrichment threads in {path}")
 
 
+def run_script(script_name: str, *args: str) -> None:
+    cmd = [sys.executable]
+    if RUNNER.exists():
+        cmd.extend([str(RUNNER), str(SCRIPT_DIR / script_name)])
+    else:
+        cmd.append(str(SCRIPT_DIR / script_name))
+    cmd.extend(args)
+    proc = subprocess.run(cmd, check=False)
+    if proc.returncode != 0:
+        raise SystemExit(proc.returncode)
+
+
 def main() -> None:
     if any(arg in {"-h", "--help"} for arg in sys.argv[1:]):
         print(
@@ -44,13 +57,15 @@ def main() -> None:
         scenicplus = shutil.which("scenicplus")
         if scenicplus is None:
             raise FileNotFoundError("scenicplus command not found on PATH")
-        subprocess.run([scenicplus, "init_snakemake", "--out_dir", str(out_dir)], check=True)
+        env = os.environ.copy()
+        env.setdefault("PYTHONWARNINGS", "ignore")
+        subprocess.run([scenicplus, "init_snakemake", "--out_dir", str(out_dir)], check=True, env=env)
     else:
         print(f"KEPT {snake_dir}")
     patch_snakefile_for_stage_threads(snake_dir / "workflow" / "Snakefile")
-    subprocess.run([sys.executable, str(SCRIPT_DIR / "prepare_scenicplus_organism_files.py")], check=True)
-    subprocess.run([sys.executable, str(SCRIPT_DIR / "setup_workflow_params.py"), "--section", "scenicplus_config"], check=True)
-    subprocess.run([sys.executable, str(SCRIPT_DIR / "generate_scenicplus_config.py")], check=True)
+    run_script("prepare_scenicplus_organism_files.py")
+    run_script("setup_workflow_params.py", "--section", "scenicplus_config")
+    run_script("generate_scenicplus_config.py")
 
 
 if __name__ == "__main__":
