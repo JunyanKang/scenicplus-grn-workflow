@@ -17,11 +17,7 @@
 - direct、orthology-mapped、audited generated 或 user-supplied species-specific motif2TF table 准备和审计，
 - 可复现 rerun、稳定性检查和结果输出。
 
-详细分析流程见：
-
-```text
-docs/SCENICPLUS_STEP_BY_STEP.md
-```
+详细分析流程见：[SCENICPLUS_STEP_BY_STEP.md](https://github.com/JunyanKang/scenicplus-grn-workflow/blob/main/docs/SCENICPLUS_STEP_BY_STEP.md)。
 
 ## 支持平台
 
@@ -120,8 +116,6 @@ PRECHECK_ONLY=1 CONDA_ROOT=/absolute/path/to/conda bash install.sh
 
 ## 安装内容
 
-安装后包含：
-
 - SCENIC+、pycisTopic、pycistarget 和 create_cisTarget_databases，
 - Python 单细胞和基因组学依赖，
 - R、Seurat、Signac、hdWGCNA 和 workflow 依赖，
@@ -166,31 +160,6 @@ archives/vendor.tar.gz
 ```bash
 GITHUB_TRIES=0 CONDA_ROOT=/absolute/path/to/conda bash install.sh
 ```
-
-## 日志和排错
-
-安装日志默认写入：
-
-```text
-logs/install_YYYYMMDD_HHMMSS.log
-```
-
-如果解压目录不可写，日志写入：
-
-```text
-/tmp/scenicplus-grn-workflow-logs
-```
-
-常用检查：
-
-```bash
-tail -n 80 logs/install_*.log
-CONDA_ROOT=/absolute/path/to/conda PRECHECK_ONLY=1 bash install.sh
-source /absolute/path/to/conda/bin/activate scenicplus-grn
-spgrn-check
-```
-
-安装失败时，保留最新安装日志和启动安装时使用的命令。
 
 ## 许可证
 

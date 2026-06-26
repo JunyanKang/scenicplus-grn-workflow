@@ -18,18 +18,11 @@ It is intended for:
 - direct, orthology-mapped, audited generated or user-supplied species-specific motif2TF table preparation and audit,
 - reproducible reruns and output checks.
 
-Detailed analysis instructions live in:
-
-```text
-docs/SCENICPLUS_STEP_BY_STEP.en.md
-```
+Detailed analysis instructions: [SCENICPLUS_STEP_BY_STEP.en.md](https://github.com/JunyanKang/scenicplus-grn-workflow/blob/main/docs/SCENICPLUS_STEP_BY_STEP.en.md).
 
 The GitHub-default Chinese README and workflow guide are:
 
-```text
-README.md
-docs/SCENICPLUS_STEP_BY_STEP.md
-```
+[README.md](https://github.com/JunyanKang/scenicplus-grn-workflow/blob/main/README.md) and [SCENICPLUS_STEP_BY_STEP.md](https://github.com/JunyanKang/scenicplus-grn-workflow/blob/main/docs/SCENICPLUS_STEP_BY_STEP.md).
 
 ## Supported Platforms
 
@@ -128,8 +121,6 @@ PRECHECK_ONLY=1 CONDA_ROOT=/absolute/path/to/conda bash install.sh
 
 ## What Gets Installed
 
-The installation provides:
-
 - SCENIC+, pycisTopic, pycistarget and create_cisTarget_databases,
 - Python single-cell and genomics libraries,
 - R, Seurat, Signac, hdWGCNA and workflow dependencies,
@@ -177,32 +168,6 @@ GitHub retries fail. To skip GitHub entirely:
 ```bash
 GITHUB_TRIES=0 CONDA_ROOT=/absolute/path/to/conda bash install.sh
 ```
-
-## Logs And Troubleshooting
-
-Installer logs are written to:
-
-```text
-logs/install_YYYYMMDD_HHMMSS.log
-```
-
-If the unpacked directory is not writable, logs are written to:
-
-```text
-/tmp/scenicplus-grn-workflow-logs
-```
-
-Useful checks:
-
-```bash
-tail -n 80 logs/install_*.log
-CONDA_ROOT=/absolute/path/to/conda PRECHECK_ONLY=1 bash install.sh
-source /absolute/path/to/conda/bin/activate scenicplus-grn
-spgrn-check
-```
-
-For a failed installation, keep the newest installation log and the command that
-was used to start the run.
 
 ## License
 
