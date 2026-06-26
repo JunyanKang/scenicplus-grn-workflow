@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.31 - 2026-06-26
+
+Hardens the optional split motif-enrichment path.
+
+Highlights:
+
+- Adds `spgrn-run-scenicplus-motif-enrichment-split --mode status` to validate
+  chunk HDF5 files, DEM empty-result diagnostics and `prepare_menr` outputs.
+- Updates the step-by-step guides so students use the status gate before Step 9
+  instead of judging completion from file size alone.
+
 ## 0.1.30 - 2026-06-25
 
 Separates installer-level workflow logic from project-specific analysis choices.

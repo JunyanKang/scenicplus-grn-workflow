@@ -520,24 +520,33 @@ chunks before the formal Snakemake run:
 
 ```bash
 spgrn-run-scenicplus-motif-enrichment-split --mode both
+spgrn-run-scenicplus-motif-enrichment-split --mode status
 ```
 
 This command creates `inputs/region_sets_split/`, runs DEM and cisTarget on each
 region-set family as separate SCENIC+ processes, then calls `prepare_menr` with
-all resulting HDF5 files. It writes a resource plan and chunk manifest here:
+all resulting HDF5 files. `--mode status` is the required completion gate before
+Step 9. It verifies valid HDF5 signatures for completed chunk outputs, records
+DEM chunks that are formally empty only when their diagnostic report exists, and
+checks that `prepare_menr` produced valid `cistromes_direct.h5ad`,
+`cistromes_extended.h5ad` and non-empty `tf_names.txt`.
+
+It writes a resource plan, chunk manifest and completion reports here:
 
 ```text
 work/scenicplus/motif_enrichment_split/motif_enrichment_split_resource_plan.tsv
 work/scenicplus/motif_enrichment_split/motif_enrichment_split_chunks.tsv
+results/scenicplus_diagnostics/motif_enrichment_split_status.tsv
+results/scenicplus_diagnostics/motif_enrichment_split_status.md
 ```
 
 The command is resumable: completed non-empty chunk HDF5 files are skipped unless
 `--force` is used.
 
 If a DEM chunk completes but produces no HDF5 under the configured thresholds,
-the runner records an `.empty.tsv` marker, automatically launches a relaxed-threshold
-diagnostic for that chunk, and continues with downstream processing when any non-empty
-DEM/CTX HDF5 exists.
+the runner records an `.empty.tsv` marker, automatically launches a
+relaxed-threshold diagnostic for that chunk, and lets `--mode status` decide
+whether the split run is safe to use.
 
 The diagnostic output is written to:
 
@@ -548,6 +557,9 @@ results/scenicplus_diagnostics/*_relaxed_threshold_diagnostic.tsv/md
 
 If all DEM chunks are empty (i.e., no formal-threshold DEM HDF5 is generated),
 the workflow stops with a hard error and points to the full diagnostic reports.
+If `--mode status` fails for any missing, invalid or half-written output, do not
+continue to Step 9. Rerun the split command; use `--force` only when replacing
+old partial outputs intentionally.
 
 If these values need to change, edit `$PROJECT_DIR/inputs/scenicplus_config_params.tsv` or rerun the setup script with `--set`, then rerun the generator. If paths or advanced SCENIC+ options need to change, edit the generated file:
 

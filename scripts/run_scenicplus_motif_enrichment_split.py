@@ -27,7 +27,7 @@ PROJECT = Path(os.environ.get("PROJECT_DIR", ".")).expanduser().resolve()
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", choices=["ctx", "dem", "both", "prepare-menr"], default="both")
+    parser.add_argument("--mode", choices=["ctx", "dem", "both", "prepare-menr", "status"], default="both")
     parser.add_argument("--config", default=None, help="Default: work/scenicplus/Snakemake/config/config.yaml")
     parser.add_argument("--split-root", default="inputs/region_sets_split")
     parser.add_argument("--out-dir", default="work/scenicplus/motif_enrichment_split")
@@ -633,6 +633,86 @@ def prepare_menr(config: dict[str, Any], motif_results: list[Path]) -> None:
     subprocess.run(cmd, cwd=PROJECT, check=True)
 
 
+def valid_hdf5(path: Path) -> bool:
+    try:
+        with path.open("rb") as handle:
+            return handle.read(8) == b"\x89HDF\r\n\x1a\n"
+    except OSError:
+        return False
+
+
+def nonempty_text(path: Path) -> bool:
+    try:
+        return path.exists() and path.stat().st_size > 0 and bool(path.read_text(errors="ignore").strip())
+    except OSError:
+        return False
+
+
+def write_status(config: dict[str, Any], chunks: list[tuple[str, Path]], out_dir: Path) -> None:
+    diag_dir = PROJECT / "results" / "scenicplus_diagnostics"
+    diag_dir.mkdir(parents=True, exist_ok=True)
+    rows: list[dict[str, str]] = []
+    for label, _folder in chunks:
+        for method in ["ctx", "dem"]:
+            hdf5 = out_dir / f"{method}_{label}.hdf5"
+            empty = out_dir / f"{method}_{label}.empty.tsv"
+            diag = diag_dir / f"dem_{label}_relaxed_threshold_diagnostic.tsv"
+            if valid_hdf5(hdf5):
+                status = "ok"
+                message = "valid HDF5"
+            elif method == "dem" and empty.exists() and empty.stat().st_size > 0:
+                status = "empty_with_diagnostic" if diag.exists() and diag.stat().st_size > 0 else "empty_missing_diagnostic"
+                message = "formal DEM empty; diagnostic recorded" if status == "empty_with_diagnostic" else "formal DEM empty but diagnostic missing"
+            else:
+                status = "missing_or_invalid"
+                message = "missing, empty, or invalid HDF5"
+            rows.append({"method": method, "label": label, "path": str(hdf5), "status": status, "message": message})
+
+    output_data = config["output_data"]
+    for key in ["cistromes_direct", "cistromes_extended"]:
+        path = p(output_data[key])
+        rows.append({
+            "method": "prepare_menr",
+            "label": key,
+            "path": str(path),
+            "status": "ok" if valid_hdf5(path) else "missing_or_invalid",
+            "message": "valid HDF5" if valid_hdf5(path) else "missing, empty, or invalid HDF5",
+        })
+    tf_path = p(output_data["tf_names"])
+    rows.append({
+        "method": "prepare_menr",
+        "label": "tf_names",
+        "path": str(tf_path),
+        "status": "ok" if nonempty_text(tf_path) else "missing_or_invalid",
+        "message": "non-empty text" if nonempty_text(tf_path) else "missing or empty text",
+    })
+
+    status_tsv = diag_dir / "motif_enrichment_split_status.tsv"
+    status_md = diag_dir / "motif_enrichment_split_status.md"
+    df = pd.DataFrame(rows)
+    df.to_csv(status_tsv, sep="\t", index=False)
+
+    bad = df[df["status"].isin(["missing_or_invalid", "empty_missing_diagnostic"])]
+    dem_rows = df[df["method"] == "dem"]
+    all_dem_empty = len(dem_rows) > 0 and not any(dem_rows["status"] == "ok")
+    ready = bad.empty and not all_dem_empty
+    status_md.write_text(
+        "\n".join([
+            "# Motif enrichment split status",
+            "",
+            f"- ready_for_step9_and_step10: {'yes' if ready else 'no'}",
+            f"- checked_chunks: {len(chunks)}",
+            f"- status_table: {status_tsv}",
+            f"- invalid_or_missing_records: {len(bad)}",
+            f"- all_dem_chunks_empty: {'yes' if all_dem_empty else 'no'}",
+        ])
+        + "\n"
+    )
+    print(status_md.read_text().strip())
+    if not ready:
+        raise RuntimeError(f"Motif enrichment split is not ready; inspect {status_tsv}")
+
+
 def main() -> None:
     args = parse_args()
     config_path = p(args.config) if args.config else PROJECT / "work" / "scenicplus" / "Snakemake" / "config" / "config.yaml"
@@ -650,6 +730,9 @@ def main() -> None:
         sep="\t",
         index=False,
     )
+    if args.mode == "status":
+        write_status(config, chunks, out_dir)
+        return
     print(f"Motif enrichment chunks: {len(chunks)}; max_parallel_chunks={max_parallel}")
 
     motif_results: list[Path] = []

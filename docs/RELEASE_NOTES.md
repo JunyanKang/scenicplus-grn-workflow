@@ -1,6 +1,6 @@
 # Release Notes
 
-## scenicplus-grn-installer v0.1.30
+## scenicplus-grn-installer v0.1.31
 
 This release packages a reproducible SCENIC+/GRN conda installer and a strict matched snRNA+snATAC workflow for annotated scMultiome projects.
 
@@ -41,6 +41,9 @@ Main deliverables:
 - Installer defaults no longer assume project-specific condition labels, color
   keys, cell labels or example marker genes; project-specific priorities belong
   in each project directory.
+- The split motif-enrichment runner now has `--mode status`, a hard completion
+  gate that detects missing, invalid or half-written chunk outputs before
+  students continue to preflight and Snakemake.
 - Generated SCENIC+ Snakefiles are patched to honor the stage-specific motif
   enrichment thread settings.
 - Large custom cisTarget databases can now use
