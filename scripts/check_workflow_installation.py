@@ -178,14 +178,16 @@ def main() -> None:
 
     if home and home.exists():
         for rel in [
+            "LICENSE",
+            "THIRD_PARTY_NOTICES.md",
             "README.md",
-            "README.zh-CN.md",
+            "README.en.md",
             "VERSION",
             "bin/check_environment.sh",
             "bin/initialize_scenicplus_project.sh",
             "bin/install_r.R",
             "docs/SCENICPLUS_STEP_BY_STEP.md",
-            "docs/SCENICPLUS_STEP_BY_STEP.zh-CN.md",
+            "docs/SCENICPLUS_STEP_BY_STEP.en.md",
             "docs/CHANGELOG.md",
             "docs/RELEASE_NOTES.md",
             "docs/VERSION_LOCK.md",

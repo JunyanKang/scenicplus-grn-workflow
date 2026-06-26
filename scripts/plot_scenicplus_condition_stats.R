@@ -7,6 +7,10 @@ suppressPackageStartupMessages({
 
 parse_args <- function() {
   x <- commandArgs(trailingOnly = TRUE)
+  if (any(x %in% c("--help", "-h"))) {
+    cat("Usage: spgrn-plot-scenicplus-condition-stats [--outdir DIR] [--file-suffix SUFFIX] [--plot-style-config TSV] [--priority-eregulons TSV]\n")
+    quit(status = 0)
+  }
   out <- list(
     outdir = "results/scenicplus_figures",
     file_suffix = "",
@@ -16,8 +20,13 @@ parse_args <- function() {
   i <- 1
   while (i <= length(x)) {
     key <- gsub("-", "_", sub("^--", "", x[[i]]))
-    out[[key]] <- x[[i + 1]]
-    i <- i + 2
+    if (i == length(x) || grepl("^--", x[[i + 1]])) {
+      out[[key]] <- TRUE
+      i <- i + 1
+    } else {
+      out[[key]] <- x[[i + 1]]
+      i <- i + 2
+    }
   }
   out
 }

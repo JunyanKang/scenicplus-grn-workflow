@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.1.38 - 2026-06-26
+
+Adds explicit licensing and third-party notices.
+
+Highlights:
+
+- Adds MIT `LICENSE` for the installer and workflow helper code.
+- Adds `THIRD_PARTY_NOTICES.md` for bundled release archives, including
+  academic non-commercial SCENIC+/pycisTopic/pycistarget terms.
+- Removes duplicate zh-CN documentation files now that Chinese is the default.
+- Updates install and workflow self-check file lists for the new documentation
+  layout.
+- Fixes R plotting entry points so `--help` returns usage text instead of
+  trying to read project result tables.
+
 ## 0.1.37 - 2026-06-26
 
 Makes Chinese the GitHub-default documentation language.
@@ -359,8 +374,7 @@ Highlights:
 - Adds AutoZyme as a no-dependency overlay that does not perturb pinned package versions.
 - Installs workflow scripts under `$CONDA_PREFIX/share/scenicplus-grn`.
 - Provides matched snRNA+snATAC step-by-step workflow scripts for annotated scMultiome objects plus original ATAC fragments and peaks.
-- Adds Chinese documentation files:
-  - `README.zh-CN.md`
-  - `SCENICPLUS_STEP_BY_STEP.zh-CN.md`
+- Adds Chinese documentation; later releases made Chinese the default README
+  and step-by-step guide.
 - Adds automatic per-step resource detection for pycisTopic and custom cisTarget database construction.
 - Adds project-local `MPLCONFIGDIR` and `NUMBA_CACHE_DIR` handling to avoid scanpy/numba cache failures on servers or restricted home directories.

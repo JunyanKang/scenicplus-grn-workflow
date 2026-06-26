@@ -7,6 +7,10 @@ suppressPackageStartupMessages({
 
 parse_args <- function() {
   x <- commandArgs(trailingOnly = TRUE)
+  if (any(x %in% c("--help", "-h"))) {
+    cat("Usage: spgrn-plot-scenicplus-publication-outputs [--outdir DIR] [--file-suffix SUFFIX] [--plot-style-config TSV]\n")
+    quit(status = 0)
+  }
   out <- list(
     outdir = "results/scenicplus_figures",
     file_suffix = "",

@@ -141,13 +141,6 @@ The environment contains:
   `macs2` and Snakemake,
 - MALLET 2.0.8 by default.
 
-Version details are recorded in:
-
-```text
-docs/VERSION_LOCK.md
-docs/RELEASE_NOTES.md
-docs/CHANGELOG.md
-```
 
 ## Verify The Installation
 
@@ -213,24 +206,11 @@ spgrn-check
 For a failed installation, keep the newest installer log and the command that
 was used to start the run.
 
-## Repository Layout
+## License
 
-Source checkout:
-
-```text
-install.sh                 Main installer.
-bin/                       Installer bootstrap checks and R layer installer.
-config/                    Conda recipes, pinned pip constraints and templates.
-scripts/                   Installed workflow command implementations.
-modules/                   Internal helper modules.
-docs/                      Step-by-step guides, changelog and version records.
-```
-
-Release package only:
-
-```text
-archives/vendor.tar.gz     Bundled offline source archives.
-```
-
-For offline or restricted-network installation, download the GitHub Release
-package or release asset rather than the source-only repository archive.
+The installer and workflow helper code is licensed under the MIT License. The
+release package's `archives/vendor.tar.gz` is only an offline cache of
+third-party source archives for reproducible installation; those components
+remain governed by their upstream licenses or terms. In particular, SCENIC+,
+pycisTopic and pycistarget use academic non-commercial terms rather than a
+general commercial open-source grant.

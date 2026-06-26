@@ -138,13 +138,6 @@ PRECHECK_ONLY=1 CONDA_ROOT=/absolute/path/to/conda bash install.sh
 - `samtools`、`tabix`、`bgzip`、`bedtools`、`macs2`、Snakemake 等命令行工具，
 - 默认安装 MALLET 2.0.8。
 
-版本信息记录在：
-
-```text
-docs/VERSION_LOCK.md
-docs/RELEASE_NOTES.md
-docs/CHANGELOG.md
-```
 
 ## 验证安装
 
@@ -208,24 +201,7 @@ spgrn-check
 
 安装失败时，保留最新 installer log 和启动安装时使用的命令。
 
-## 仓库结构
+## 许可证
 
-源码 checkout：
-
-```text
-install.sh                 主安装器。
-bin/                       安装 bootstrap 检查和 R 层安装器。
-config/                    conda recipe、pip constraints 和模板。
-scripts/                   安装后的 workflow 命令实现。
-modules/                   内部 helper modules。
-docs/                      step-by-step 文档、changelog 和版本记录。
-```
-
-仅 release package 包含：
-
-```text
-archives/vendor.tar.gz     离线源码归档。
-```
-
-如果需要离线或网络受限安装，应下载 GitHub Release package 或 release asset，
-不要使用 source-only 的仓库下载包。
+本 installer 和 workflow helper 代码使用 MIT License。release package 中的
+`archives/vendor.tar.gz` 只是用于离线和可复现安装的第三方源码缓存；第三方组件仍遵循各自上游许可证或使用条款。尤其是 SCENIC+、pycisTopic 和 pycistarget 使用 academic non-commercial 许可，不是通用商业开源授权。

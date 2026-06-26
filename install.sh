@@ -250,9 +250,11 @@ copy_distribution_assets() {
   mkdir -p "$target_dir/docs"
   mkdir -p "$target_dir/archives"
   cp -f \
+    "$SCRIPT_DIR/LICENSE" \
+    "$SCRIPT_DIR/THIRD_PARTY_NOTICES.md" \
     "$SCRIPT_DIR/VERSION" \
     "$SCRIPT_DIR/README.md" \
-    "$SCRIPT_DIR/README.zh-CN.md" \
+    "$SCRIPT_DIR/README.en.md" \
     "$SCRIPT_DIR/install.sh" \
     "$target_dir/"
   cp -f \
@@ -272,7 +274,7 @@ copy_distribution_assets() {
     "$DOCS_DIR/CHANGELOG.md" \
     "$DOCS_DIR/RELEASE_NOTES.md" \
     "$DOCS_DIR/SCENICPLUS_STEP_BY_STEP.md" \
-    "$DOCS_DIR/SCENICPLUS_STEP_BY_STEP.zh-CN.md" \
+    "$DOCS_DIR/SCENICPLUS_STEP_BY_STEP.en.md" \
     "$target_dir/docs/"
   if [[ -s "$VENDOR_ARCHIVE" ]]; then
     cp -f "$VENDOR_ARCHIVE" "$target_dir/archives/vendor.tar.gz"
