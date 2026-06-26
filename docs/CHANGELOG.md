@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.1.35 - 2026-06-26
+
+Clarifies student-editable placeholders in the README and workflow guides.
+
+Highlights:
+
+- Adds shell comments next to project-initialization values that must be
+  replaced before running.
+- Marks `corrected_metadata_column` as an explicit placeholder in the
+  annotated-object export override example.
+- Keeps the README initialization command copy-safe by using exported variables
+  instead of inline environment-variable continuation.
+- Clarifies that `archives/vendor.tar.gz` is a release-package artifact rather
+  than a Git-tracked source file.
+
 ## 0.1.34 - 2026-06-26
 
 Adds terminal progress indicators where the workflow has real bounded work

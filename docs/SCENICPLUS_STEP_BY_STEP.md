@@ -82,14 +82,21 @@ cellranger_outs
 0.1-Enter project parameters:
 
 ```bash
+# Replace every value in this block before running.
+# /absolute/path/to/conda must be the real conda/miniforge/miniconda root.
 export CONDA_ROOT=/absolute/path/to/conda
 export ENV_NAME=scenicplus-grn
+# PROJECT_DIR must be a dedicated SCENIC+ analysis directory.
 export PROJECT_DIR=/absolute/path/to/grn_project/scenicplus_analysis
+# ORGANISM must be one supported key listed above.
 export ORGANISM=mouse
 export AUTOZYME=on
 export ENSEMBL_RELEASE=115
+# ANNOTATED_OBJECT must be the active annotated object for this analysis.
 export ANNOTATED_OBJECT=/absolute/path/to/active_annotated_multiome_object.rds
+# CELL_LABEL_COLUMN must be a real metadata column in ANNOTATED_OBJECT.
 export CELL_LABEL_COLUMN=cell_annotation
+# ATAC_INPUT_LAYOUT must match the real ATAC_DATA_ROOT structure.
 export ATAC_INPUT_LAYOUT=split_ge_arc
 export ATAC_DATA_ROOT=/absolute/path/to/atac_input_root
 ```
@@ -224,6 +231,7 @@ spgrn-export-annotated-object
 To override the Step 0 cell-label column:
 
 ```bash
+# corrected_metadata_column must be replaced with a real metadata column name.
 spgrn-export-annotated-object --cell-label-column corrected_metadata_column
 ```
 

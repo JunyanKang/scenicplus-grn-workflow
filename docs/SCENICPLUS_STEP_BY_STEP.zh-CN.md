@@ -75,14 +75,21 @@ cellranger_outs
 0.1-输入项目参数：
 
 ```bash
+# 运行前必须替换本代码块中的所有示例值。
+# /absolute/path/to/conda 需要改成真实 conda/miniforge/miniconda 根目录。
 export CONDA_ROOT=/absolute/path/to/conda
 export ENV_NAME=scenicplus-grn
+# PROJECT_DIR 需要改成专用 SCENIC+ 分析目录。
 export PROJECT_DIR=/absolute/path/to/grn_project/scenicplus_analysis
+# ORGANISM 需要改成上方支持物种 key 之一。
 export ORGANISM=mouse
 export AUTOZYME=on
 export ENSEMBL_RELEASE=115
+# ANNOTATED_OBJECT 需要改成本次 active annotated object 的真实路径。
 export ANNOTATED_OBJECT=/absolute/path/to/active_annotated_multiome_object.rds
+# CELL_LABEL_COLUMN 需要改成 ANNOTATED_OBJECT 中真实存在的 metadata column。
 export CELL_LABEL_COLUMN=cell_annotation
+# ATAC_INPUT_LAYOUT 需要和真实 ATAC_DATA_ROOT 目录结构匹配。
 export ATAC_INPUT_LAYOUT=split_ge_arc
 export ATAC_DATA_ROOT=/absolute/path/to/atac_input_root
 ```
@@ -208,6 +215,7 @@ spgrn-export-annotated-object
 如果需要覆盖 Step 0 中的 cell label column：
 
 ```bash
+# corrected_metadata_column 需要手动修改为真实 metadata column 名称。
 spgrn-export-annotated-object --cell-label-column corrected_metadata_column
 ```
 

@@ -174,16 +174,23 @@ spgrn-check-workflow-installation
 使用已安装的初始化命令创建或更新项目：
 
 ```bash
-CONDA_ROOT=/absolute/path/to/conda \
-ENV_NAME=scenicplus-grn \
-PROJECT_DIR=/absolute/path/to/grn_project \
-ORGANISM=mouse \
-AUTOZYME=on \
-ENSEMBL_RELEASE=115 \
-ANNOTATED_OBJECT=/absolute/path/to/annotated_multiome_object.rds \
-CELL_LABEL_COLUMN=cell_annotation \
-ATAC_INPUT_LAYOUT=split_ge_arc \
-ATAC_DATA_ROOT=/absolute/path/to/raw_atac_data \
+# 运行前先替换这些示例值。
+# CONDA_ROOT 需要改成真实 conda/miniforge/miniconda 根目录。
+export CONDA_ROOT=/absolute/path/to/conda
+export ENV_NAME=scenicplus-grn
+# PROJECT_DIR 需要改成专用 SCENIC+ 分析目录。
+export PROJECT_DIR=/absolute/path/to/grn_project
+# ORGANISM 需要改成支持物种 key 之一。
+export ORGANISM=mouse
+export AUTOZYME=on
+export ENSEMBL_RELEASE=115
+# ANNOTATED_OBJECT 需要改成本次 active annotated object 的真实路径。
+export ANNOTATED_OBJECT=/absolute/path/to/annotated_multiome_object.rds
+# CELL_LABEL_COLUMN 需要改成 ANNOTATED_OBJECT 中真实存在的 metadata column。
+export CELL_LABEL_COLUMN=cell_annotation
+# ATAC_INPUT_LAYOUT 需要和真实 ATAC_DATA_ROOT 目录结构匹配。
+export ATAC_INPUT_LAYOUT=split_ge_arc
+export ATAC_DATA_ROOT=/absolute/path/to/raw_atac_data
 spgrn-initialize
 ```
 
@@ -196,7 +203,11 @@ $CONDA_PREFIX/share/scenicplus-grn/docs/SCENICPLUS_STEP_BY_STEP.zh-CN.md
 
 ## 离线或网络受限安装
 
-release archive 包含：
+Git 仓库不跟踪 bundled source archive，因为这是体积较大的二进制 release
+artifact。`archives/vendor.tar.gz` 只随 GitHub Release package 分发，不会出现在
+普通源码 checkout 或 GitHub "Code" 下载包里。
+
+release package 包含：
 
 ```text
 archives/vendor.tar.gz
@@ -236,12 +247,22 @@ spgrn-check
 
 ## 仓库结构
 
+源码 checkout：
+
 ```text
 install.sh                 主安装器。
 bin/                       安装 bootstrap 检查和 R 层安装器。
 config/                    conda recipe、pip constraints 和模板。
-archives/vendor.tar.gz     离线源码归档。
 scripts/                   安装后的 workflow 命令实现。
 modules/                   内部 helper modules。
 docs/                      step-by-step 文档、changelog 和版本记录。
 ```
+
+仅 release package 包含：
+
+```text
+archives/vendor.tar.gz     离线源码归档。
+```
+
+如果需要离线或网络受限安装，应下载 GitHub Release package 或 release asset，
+不要使用 source-only 的仓库下载包。

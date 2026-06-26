@@ -177,16 +177,23 @@ workflow scripts and installed documentation.
 Create or update a project using the installed initializer:
 
 ```bash
-CONDA_ROOT=/absolute/path/to/conda \
-ENV_NAME=scenicplus-grn \
-PROJECT_DIR=/absolute/path/to/grn_project \
-ORGANISM=mouse \
-AUTOZYME=on \
-ENSEMBL_RELEASE=115 \
-ANNOTATED_OBJECT=/absolute/path/to/annotated_multiome_object.rds \
-CELL_LABEL_COLUMN=cell_annotation \
-ATAC_INPUT_LAYOUT=split_ge_arc \
-ATAC_DATA_ROOT=/absolute/path/to/raw_atac_data \
+# Replace these example values before running.
+# CONDA_ROOT must be the real conda/miniforge/miniconda root.
+export CONDA_ROOT=/absolute/path/to/conda
+export ENV_NAME=scenicplus-grn
+# PROJECT_DIR must be a dedicated SCENIC+ analysis directory.
+export PROJECT_DIR=/absolute/path/to/grn_project
+# ORGANISM must be one supported organism key.
+export ORGANISM=mouse
+export AUTOZYME=on
+export ENSEMBL_RELEASE=115
+# ANNOTATED_OBJECT must be the active annotated object for this analysis.
+export ANNOTATED_OBJECT=/absolute/path/to/annotated_multiome_object.rds
+# CELL_LABEL_COLUMN must be a real metadata column in ANNOTATED_OBJECT.
+export CELL_LABEL_COLUMN=cell_annotation
+# ATAC_INPUT_LAYOUT must match the real ATAC_DATA_ROOT structure.
+export ATAC_INPUT_LAYOUT=split_ge_arc
+export ATAC_DATA_ROOT=/absolute/path/to/raw_atac_data
 spgrn-initialize
 ```
 
@@ -199,7 +206,12 @@ $CONDA_PREFIX/share/scenicplus-grn/docs/SCENICPLUS_STEP_BY_STEP.md
 
 ## Offline And Restricted-Network Installs
 
-Release archives include:
+The Git repository does not track the bundled source archive because it is a
+large binary release artifact. `archives/vendor.tar.gz` is distributed with the
+GitHub Release package, not with a normal source checkout or GitHub "Code"
+download.
+
+Release packages include:
 
 ```text
 archives/vendor.tar.gz
@@ -240,12 +252,22 @@ was used to start the run.
 
 ## Repository Layout
 
+Source checkout:
+
 ```text
 install.sh                 Main installer.
 bin/                       Installer bootstrap checks and R layer installer.
 config/                    Conda recipes, pinned pip constraints and templates.
-archives/vendor.tar.gz     Bundled offline source archives.
 scripts/                   Installed workflow command implementations.
 modules/                   Internal helper modules.
 docs/                      Step-by-step guides, changelog and version records.
 ```
+
+Release package only:
+
+```text
+archives/vendor.tar.gz     Bundled offline source archives.
+```
+
+For offline or restricted-network installation, download the GitHub Release
+package or release asset rather than the source-only repository archive.
