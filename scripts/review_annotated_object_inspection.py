@@ -54,14 +54,10 @@ def main() -> None:
         df = pd.read_csv(params, sep="\t", dtype=str).fillna("")
         key_col, value_col = df.columns[:2]
         values = {str(k): str(v) for k, v in zip(df[key_col], df[value_col])}
-        required = [
-            "cell_label_column",
-            "assay",
-            "layer",
-            "reduction",
-            "sample_column",
-            "condition_column",
-        ]
+        object_format = values.get("object_format", "").lower().lstrip(".")
+        required = ["cell_label_column", "reduction", "sample_col", "condition_col"]
+        if object_format in {"rds", "qs"}:
+            required.extend(["assay", "layer"])
         rows = []
         for key in required:
             value = values.get(key, "")

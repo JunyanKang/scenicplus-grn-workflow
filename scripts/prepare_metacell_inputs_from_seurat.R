@@ -11,12 +11,6 @@ if (any(args %in% c("-h", "--help"))) {
   quit(status = 0)
 }
 
-suppressPackageStartupMessages({
-  library(Seurat)
-  library(hdWGCNA)
-  library(Matrix)
-})
-
 project_dir <- Sys.getenv("PROJECT_DIR")
 if (!nzchar(project_dir)) {
   stop("PROJECT_DIR is not set. Source project_env.sh before running this script.")
@@ -97,6 +91,12 @@ if (!"original_cell_id" %in% colnames(cell_meta)) {
 if (!"condition" %in% colnames(cell_meta)) {
   cell_meta$condition <- "condition_1"
 }
+
+suppressPackageStartupMessages({
+  library(Seurat)
+  library(hdWGCNA)
+  library(Matrix)
+})
 
 object_format <- tolower(tools::file_ext(seurat_rds))
 if (object_format == "rds") {

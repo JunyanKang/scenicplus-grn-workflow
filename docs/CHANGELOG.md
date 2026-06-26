@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.1.54 - 2026-06-26
+
+Adds deeper workflow command validation fixes.
+
+Highlights:
+
+- Fixes annotated-object review for AnnData h5ad inputs by checking
+  `sample_col` and `condition_col`, and only requiring Seurat `assay/layer` for
+  RDS/QS inputs.
+- Makes `spgrn-run-pycistopic-workflow` fail before importing pycisTopic when
+  the active chromsizes file is missing.
+- Resolves pycisTopic relative file checks against `PROJECT_DIR`.
+- Delays heavy Seurat/hdWGCNA package loading in
+  `spgrn-prepare-metacell-inputs-from-seurat` until after lightweight parameter
+  validation.
+- Validates the step-by-step workflow on a temporary project through h5ad
+  inspection/export, ATAC sample-sheet generation, ATAC standardization,
+  fragment reassignment, SCENIC+ config initialization, preflight gates,
+  stability comparison and direct-layer postprocess figure generation.
+
 ## 0.1.53 - 2026-06-26
 
 Hardens resource entry points after release testing.

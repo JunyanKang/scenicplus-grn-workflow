@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from datetime import datetime
+import csv
 import json
 import os
 import pickle
@@ -45,6 +46,17 @@ if missing_start:
         "ERROR: pycisTopic inputs are not ready. Run setup/ATAC preparation first. Missing: "
         + ", ".join(missing_start)
     )
+
+with (INPUTS / "pycistopic_params.tsv").open() as handle:
+    start_params = {row["parameter"]: row["value"] for row in csv.DictReader(handle, delimiter="\t") if row.get("parameter")}
+start_chromsizes = start_params.get("chromsizes", "")
+if not start_chromsizes:
+    raise SystemExit("ERROR: inputs/pycistopic_params.tsv must define chromsizes.")
+start_chromsizes_path = Path(start_chromsizes).expanduser()
+if not start_chromsizes_path.is_absolute():
+    start_chromsizes_path = PROJECT / start_chromsizes_path
+if not start_chromsizes_path.exists() or start_chromsizes_path.stat().st_size == 0:
+    raise SystemExit(f"ERROR: chromsizes not found: {start_chromsizes_path}")
 
 import numpy as np
 import pandas as pd
@@ -329,7 +341,9 @@ def read_narrow_peak_as_pyranges(path: Path) -> pr.PyRanges:
 
 
 def require_file(path: str | Path, label: str) -> Path:
-    p = Path(path)
+    p = Path(path).expanduser()
+    if not p.is_absolute():
+        p = PROJECT / p
     if not p.exists():
         raise FileNotFoundError(f"{label} not found: {p}")
     return p
