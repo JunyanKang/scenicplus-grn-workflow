@@ -59,12 +59,38 @@ def run_logged(cmd: list[str], log_name: str) -> None:
         raise SystemExit(code)
 
 
+def require_inputs(params: dict[str, str], task: str, layers: list[str]) -> None:
+    if task == "audit":
+        return
+    needed = [params.get("metadata", "")]
+    if task in {"figures", "all"}:
+        needed.append(params.get("tf_to_gene", ""))
+        for layer in layers:
+            needed.extend([params.get(f"{layer}_auc_h5mu", ""), params.get(f"{layer}_eregulons", "")])
+    if task in {"stats", "all"}:
+        for layer in layers:
+            needed.append(params.get(f"{layer}_auc_h5mu", ""))
+    missing = []
+    for value in needed:
+        if not value:
+            continue
+        path = Path(value).expanduser()
+        if not path.is_absolute():
+            path = (PROJECT / path).resolve()
+        if not path.exists() or path.stat().st_size == 0:
+            missing.append(str(path))
+    if missing:
+        raise SystemExit("ERROR: SCENIC+ postprocess inputs are not ready. Missing: " + ", ".join(dict.fromkeys(missing)))
+
+
 def main() -> None:
     args = parse_args()
     params_path = Path(args.params).expanduser() if args.params else PROJECT / "inputs" / "postprocess_params.tsv"
     if not params_path.is_absolute():
         params_path = (PROJECT / params_path).resolve()
     params = read_params(params_path)
+    layers = ["direct", "extended"] if args.layer == "all" else [args.layer]
+    require_inputs(params, args.task, layers)
     if args.task in {"audit", "all"}:
         run_logged(
             [
@@ -75,8 +101,6 @@ def main() -> None:
         )
         if args.task == "audit":
             return
-    layers = ["direct", "extended"] if args.layer == "all" else [args.layer]
-
     def run_figures_layer(layer: str) -> None:
         run_logged(
             [

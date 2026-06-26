@@ -3,23 +3,31 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
+MODULES_DIR = Path(__file__).resolve().parents[1] / "modules"
+sys.path.insert(0, str(MODULES_DIR))
 
-ORGANISMS = ["human", "mouse", "cyno", "rat", "rabbit", "chicken", "zebrafish"]
+from organism_resources import resolve_organism  # noqa: E402
+
+
+MOTIF2TF_REFERENCES = ["auto", "human", "mouse", "fly", "chicken"]
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", default=None, help="Project settings file, for example scenicplus_project.env")
     parser.add_argument("--project-dir", default=None)
-    parser.add_argument("--organism", choices=ORGANISMS, default=None)
+    parser.add_argument("--organism", default=None, help="Ensembl species name or common alias; validated in resource preparation.")
     parser.add_argument("--autozyme", choices=["on", "off"], default=None)
     parser.add_argument("--conda-root", default=None)
     parser.add_argument("--env-name", default=None)
     parser.add_argument("--ensembl-release", default=None)
     parser.add_argument("--max-memory-gb", default=None, help="Workflow RAM budget in GB, or auto.")
     parser.add_argument("--cell-label-column", default=None)
+    parser.add_argument("--motif2tf-reference", choices=MOTIF2TF_REFERENCES, default=None)
+    parser.add_argument("--motif2tf-table", default=None)
     parser.add_argument("--env-file", default=None, help="Default: <project-dir>/project_env.sh")
     return parser.parse_args()
 
@@ -47,6 +55,26 @@ def config_get(config: dict[str, str], key: str, default: str | None = None) -> 
 
 def shell_quote(value: str) -> str:
     return "'" + value.replace("'", "'\"'\"'") + "'"
+
+
+def update_config(path: Path, values: dict[str, str]) -> None:
+    existing = path.read_text().splitlines() if path.exists() else []
+    seen = set()
+    out = []
+    for line in existing:
+        if "=" not in line or line.lstrip().startswith("#"):
+            out.append(line)
+            continue
+        key = line.split("=", 1)[0].strip()
+        if key in values:
+            out.append(f"{key}={shell_quote(values[key])}")
+            seen.add(key)
+        else:
+            out.append(line)
+    for key, value in values.items():
+        if key not in seen:
+            out.append(f"{key}={shell_quote(value)}")
+    path.write_text("\n".join(out) + "\n")
 
 
 def read_macs_genome_size(chromsizes: Path) -> str:
@@ -80,22 +108,24 @@ def main() -> None:
     config = read_config(args.config)
     project_dir_value = args.project_dir or config_get(config, "PROJECT_DIR")
     organism = args.organism or config_get(config, "ORGANISM")
+    ensembl_release = args.ensembl_release or config_get(config, "ENSEMBL_RELEASE", "")
+    if organism:
+        organism = resolve_organism(organism, ensembl_release or None)
     if not project_dir_value:
         raise SystemExit("ERROR: --project-dir or PROJECT_DIR in --config is required.")
-    if not organism:
-        raise SystemExit("ERROR: --organism or ORGANISM in --config is required.")
-    if organism not in ORGANISMS:
-        raise SystemExit(f"ERROR: unsupported ORGANISM={organism!r}; choose one of: {', '.join(ORGANISMS)}")
     autozyme = args.autozyme or config_get(config, "AUTOZYME", "on")
     if autozyme not in {"on", "off"}:
         raise SystemExit("ERROR: AUTOZYME must be on or off.")
     conda_root = args.conda_root or config_get(config, "CONDA_ROOT")
     env_name = args.env_name or config_get(config, "ENV_NAME", "scenicplus-grn")
-    ensembl_release = args.ensembl_release or config_get(config, "ENSEMBL_RELEASE", "115")
     max_memory_gb = normalize_memory_budget(args.max_memory_gb or config_get(config, "SCENICPLUS_MAX_MEMORY_GB", "auto"))
     cell_label_column = args.cell_label_column or config_get(config, "CELL_LABEL_COLUMN", "")
     atac_input_layout = config_get(config, "ATAC_INPUT_LAYOUT", "")
     atac_data_root = config_get(config, "ATAC_DATA_ROOT", "")
+    motif2tf_reference = args.motif2tf_reference or config_get(config, "MOTIF2TF_REFERENCE", "")
+    motif2tf_table = args.motif2tf_table or config_get(config, "MOTIF2TF_TABLE", "")
+    if motif2tf_reference and motif2tf_reference not in MOTIF2TF_REFERENCES:
+        raise SystemExit(f"ERROR: MOTIF2TF_REFERENCE must be one of: {', '.join(MOTIF2TF_REFERENCES)}")
 
     project_dir = Path(project_dir_value).expanduser().resolve()
     for rel in [
@@ -114,11 +144,11 @@ def main() -> None:
     ]:
         (project_dir / rel).mkdir(parents=True, exist_ok=True)
 
-    chroms = f"resources/chromosomes/{organism}.ucsc.standard.chroms.txt"
-    genome = f"resources/{organism}/{organism}.ucsc.standard.fa"
-    chromsizes = f"resources/{organism}/{organism}.ucsc.standard.chromsizes.tsv"
-    genome_annotation = f"resources/{organism}/{organism}.ucsc.standard.genome_annotation.tsv"
-    macs_genome_size = read_macs_genome_size(project_dir / chromsizes)
+    chroms = f"resources/chromosomes/{organism}.ucsc.standard.chroms.txt" if organism else ""
+    genome = f"resources/{organism}/{organism}.ucsc.standard.fa" if organism else ""
+    chromsizes = f"resources/{organism}/{organism}.ucsc.standard.chromsizes.tsv" if organism else ""
+    genome_annotation = f"resources/{organism}/{organism}.ucsc.standard.genome_annotation.tsv" if organism else ""
+    macs_genome_size = read_macs_genome_size(project_dir / chromsizes) if chromsizes else ""
     autozyme_disabled = "0" if autozyme == "on" else "1"
     env_file = Path(args.env_file).expanduser().resolve() if args.env_file else project_dir / "project_env.sh"
     env_file.parent.mkdir(parents=True, exist_ok=True)
@@ -132,15 +162,20 @@ def main() -> None:
             project_config.write_text(source_config.read_text())
         else:
             project_config.touch(exist_ok=True)
+    update_values = {}
+    if organism:
+        update_values["ORGANISM"] = organism
+    if ensembl_release:
+        update_values["ENSEMBL_RELEASE"] = str(ensembl_release)
+    if update_values:
+        update_config(project_config, update_values)
 
     lines = [
         "# Source this file before running project commands:",
         f"#   source {env_file}",
         f"export PROJECT_DIR={shell_quote(str(project_dir))}",
         f"export SCENICPLUS_PROJECT_CONFIG={shell_quote(str(project_config))}",
-        f"export ORGANISM={shell_quote(organism)}",
         f"export ENV_NAME={shell_quote(str(env_name))}",
-        f"export ENSEMBL_RELEASE={shell_quote(str(ensembl_release))}",
         f"export SCENICPLUS_MAX_MEMORY_GB={shell_quote(max_memory_gb)}",
         f"export AUTOZYME={shell_quote(autozyme)}",
         'export MPLCONFIGDIR="$PROJECT_DIR/tmp/matplotlib"',
@@ -151,6 +186,10 @@ def main() -> None:
         f"export GENOME_ANNOTATION={shell_quote(genome_annotation)}",
         f"export AUTOZYME_DISABLED={shell_quote(autozyme_disabled)}",
     ]
+    if organism:
+        lines.insert(3, f"export ORGANISM={shell_quote(organism)}")
+    if ensembl_release:
+        lines.insert(4 if organism else 3, f"export ENSEMBL_RELEASE={shell_quote(str(ensembl_release))}")
     if conda_root:
         env_prefix = str(Path(conda_root).expanduser() / "envs" / str(env_name))
         lines.insert(3, f"export CONDA_ROOT={shell_quote(str(Path(conda_root).expanduser()))}")
@@ -165,6 +204,10 @@ def main() -> None:
         lines.append('export MACS_GENOME_SIZE=""')
     if cell_label_column:
         lines.append(f"export CELL_LABEL_COLUMN={shell_quote(cell_label_column)}")
+    if motif2tf_table:
+        lines.append(f"export MOTIF2TF_TABLE={shell_quote(motif2tf_table)}")
+    if motif2tf_reference:
+        lines.append(f"export MOTIF2TF_REFERENCE={shell_quote(motif2tf_reference)}")
     if atac_input_layout:
         lines.append(f"export ATAC_INPUT_LAYOUT={shell_quote(atac_input_layout)}")
     if atac_data_root:
@@ -183,12 +226,15 @@ def main() -> None:
 
     print(f"WROTE {env_file}")
     print(f"PROJECT_DIR={project_dir}")
-    print(f"ORGANISM={organism}")
+    print(f"ORGANISM={organism or 'not set; set in Step 1'}")
     if conda_root:
         print(f"CONDA_ROOT={Path(conda_root).expanduser()}")
     print(f"ENV_NAME={env_name}")
-    print(f"ENSEMBL_RELEASE={ensembl_release}")
+    print(f"ENSEMBL_RELEASE={ensembl_release or 'not set; set in Step 1'}")
     print(f"SCENICPLUS_MAX_MEMORY_GB={max_memory_gb}")
+    print(f"MOTIF2TF_REFERENCE={motif2tf_reference or 'not set; prepare_official_resources defaults to auto'}")
+    if motif2tf_table:
+        print(f"MOTIF2TF_TABLE={motif2tf_table}")
     if cell_label_column:
         print(f"CELL_LABEL_COLUMN={cell_label_column}")
     else:

@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-This repository's installer and workflow helper code is licensed under the
+This repository's workflow helper and installation code is licensed under the
 MIT License in `LICENSE`.
 
 The release package may include `archives/vendor.tar.gz`, an offline cache of
@@ -24,7 +24,7 @@ repository. They remain governed by their upstream licenses and terms.
 
 ## Practical Use Notes
 
-- The installer code in this repository is permissively licensed for reuse.
+- The workflow helper and installation code in this repository is permissively licensed for reuse.
 - The bundled SCENIC+/pycisTopic/pycistarget layer is not a general commercial
   open-source grant. It is intended here for academic/laboratory research
   installation workflows.

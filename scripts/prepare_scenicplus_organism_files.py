@@ -5,23 +5,24 @@ from __future__ import annotations
 import argparse
 import os
 import shutil
+import sys
 from pathlib import Path
+
+MODULES_DIR = Path(__file__).resolve().parents[1] / "modules"
+sys.path.insert(0, str(MODULES_DIR))
+
+from organism_resources import resolve_organism  # noqa: E402
 
 
 CONFIG = {
-    "human": ("hsapiens", "homo_sapiens"),
-    "mouse": ("mmusculus", "mus_musculus"),
-    "cyno": ("custom", "custom"),
-    "rat": ("custom", "custom"),
-    "rabbit": ("custom", "custom"),
-    "chicken": ("custom", "custom"),
-    "zebrafish": ("custom", "custom"),
+    "homo_sapiens": ("hsapiens", "homo_sapiens"),
+    "mus_musculus": ("mmusculus", "mus_musculus"),
 }
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--organism", choices=sorted(CONFIG), default=os.environ.get("ORGANISM"))
+    parser.add_argument("--organism", default=os.environ.get("ORGANISM"), help="Ensembl species name or common alias.")
     parser.add_argument("--resources-dir", default=None, help="Default: $PROJECT_DIR/resources")
     parser.add_argument("--scenicplus-dir", default=None, help="Default: $PROJECT_DIR/work/scenicplus")
     parser.add_argument("--out-config", default=None, help="Default: $PROJECT_DIR/work/scenicplus/organism_config.yaml")
@@ -43,13 +44,14 @@ def main() -> None:
     args = parse_args()
     if not args.organism:
         raise SystemExit("ERROR: --organism is required unless ORGANISM is set in project_env.sh.")
+    organism = resolve_organism(args.organism, os.environ.get("ENSEMBL_RELEASE"))
     pdir = project_dir()
     resources = resolve_project_path(args.resources_dir, "resources", pdir)
     scenicplus_dir = resolve_project_path(args.scenicplus_dir, "work/scenicplus", pdir)
     scenicplus_dir.mkdir(parents=True, exist_ok=True)
 
-    species_dir = resources / args.organism
-    prefix = args.organism
+    species_dir = resources / organism
+    prefix = organism
     annotation = species_dir / f"{prefix}.ucsc.standard.genome_annotation.tsv"
     chromsizes = species_dir / f"{prefix}.ucsc.standard.chromsizes.tsv"
     if not annotation.exists():
@@ -60,7 +62,7 @@ def main() -> None:
     shutil.copy2(annotation, scenicplus_dir / "genome_annotation.tsv")
     shutil.copy2(chromsizes, scenicplus_dir / "chromsizes.tsv")
 
-    data_species, motif_species = CONFIG[args.organism]
+    data_species, motif_species = CONFIG.get(organism, ("custom", "custom"))
     config = f"""params_data_preparation:
   species: "{data_species}"
   biomart_host: "http://www.ensembl.org/"

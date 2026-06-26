@@ -5,10 +5,7 @@ usage() {
   cat <<'EOF'
 Usage:
   CONDA_ROOT=/absolute/path/to/conda ENV_NAME=scenicplus-grn PROJECT_DIR=/absolute/path/to/project \
-    ORGANISM=mouse AUTOZYME=on ENSEMBL_RELEASE=115 \
-    ANNOTATED_OBJECT=/absolute/path/to/active_object.rds CELL_LABEL_COLUMN=cell_annotation \
-    ATAC_INPUT_LAYOUT=split_ge_arc ATAC_DATA_ROOT=/absolute/path/to/atac_input_root \
-    bash initialize_scenicplus_project.sh
+    AUTOZYME=on bash initialize_scenicplus_project.sh
 
 This script validates the installed SCENIC+ environment, creates the project
 directory layout, writes PROJECT_DIR/project_env.sh, and records the input
@@ -78,29 +75,39 @@ update_config_setting() {
 require_var CONDA_ROOT
 require_var ENV_NAME
 require_var PROJECT_DIR
-require_var ORGANISM
-require_var ANNOTATED_OBJECT
-require_var CELL_LABEL_COLUMN
-require_var ATAC_INPUT_LAYOUT
-require_var ATAC_DATA_ROOT
 
 AUTOZYME="${AUTOZYME:-on}"
-ENSEMBL_RELEASE="${ENSEMBL_RELEASE:-115}"
+ORGANISM="${ORGANISM:-}"
+ENSEMBL_RELEASE="${ENSEMBL_RELEASE:-}"
 SCENICPLUS_MAX_MEMORY_GB="${SCENICPLUS_MAX_MEMORY_GB:-auto}"
+MOTIF2TF_REFERENCE="${MOTIF2TF_REFERENCE:-}"
+MOTIF2TF_TABLE="${MOTIF2TF_TABLE:-}"
+ANNOTATED_OBJECT="${ANNOTATED_OBJECT:-}"
+CELL_LABEL_COLUMN="${CELL_LABEL_COLUMN:-}"
+ATAC_INPUT_LAYOUT="${ATAC_INPUT_LAYOUT:-}"
+ATAC_DATA_ROOT="${ATAC_DATA_ROOT:-}"
 
 CONDA_ROOT="$(expand_path "$CONDA_ROOT")"
 PROJECT_DIR="$(expand_path "$PROJECT_DIR")"
-ANNOTATED_OBJECT="$(expand_path "$ANNOTATED_OBJECT")"
-ATAC_DATA_ROOT="$(expand_path "$ATAC_DATA_ROOT")"
+if [[ -n "$ANNOTATED_OBJECT" ]]; then
+  ANNOTATED_OBJECT="$(expand_path "$ANNOTATED_OBJECT")"
+fi
+if [[ -n "$ATAC_DATA_ROOT" ]]; then
+  ATAC_DATA_ROOT="$(expand_path "$ATAC_DATA_ROOT")"
+fi
+if [[ -n "$MOTIF2TF_TABLE" ]]; then
+  MOTIF2TF_TABLE="$(expand_path "$MOTIF2TF_TABLE")"
+fi
 
-case "$ORGANISM" in
-  human|mouse|cyno|rat|rabbit|chicken|zebrafish) ;;
-  *)
-    echo "ERROR: unsupported ORGANISM=$ORGANISM" >&2
-    echo "Allowed: human mouse cyno rat rabbit chicken zebrafish" >&2
-    exit 2
-    ;;
-esac
+if [[ -n "$MOTIF2TF_REFERENCE" ]]; then
+  case "$MOTIF2TF_REFERENCE" in
+    human|mouse|fly|chicken) ;;
+    *)
+      echo "ERROR: MOTIF2TF_REFERENCE must be human, mouse, fly, or chicken." >&2
+      exit 2
+      ;;
+  esac
+fi
 case "$AUTOZYME" in
   on|off) ;;
   *)
@@ -108,19 +115,25 @@ case "$AUTOZYME" in
     exit 2
     ;;
 esac
-case "$ATAC_INPUT_LAYOUT" in
-  split_ge_arc|cellranger_outs) ;;
-  *)
-    echo "ERROR: ATAC_INPUT_LAYOUT must be split_ge_arc or cellranger_outs." >&2
-    exit 2
-    ;;
-esac
-if [[ ! -f "$ANNOTATED_OBJECT" ]]; then
+if [[ -n "$ATAC_INPUT_LAYOUT" ]]; then
+  case "$ATAC_INPUT_LAYOUT" in
+    split_ge_arc|cellranger_outs) ;;
+    *)
+      echo "ERROR: ATAC_INPUT_LAYOUT must be split_ge_arc or cellranger_outs." >&2
+      exit 2
+      ;;
+  esac
+fi
+if [[ -n "$ANNOTATED_OBJECT" && ! -f "$ANNOTATED_OBJECT" ]]; then
   echo "ERROR: ANNOTATED_OBJECT not found: $ANNOTATED_OBJECT" >&2
   exit 1
 fi
-if [[ ! -d "$ATAC_DATA_ROOT" ]]; then
+if [[ -n "$ATAC_DATA_ROOT" && ! -d "$ATAC_DATA_ROOT" ]]; then
   echo "ERROR: ATAC_DATA_ROOT not found: $ATAC_DATA_ROOT" >&2
+  exit 1
+fi
+if [[ -n "$MOTIF2TF_TABLE" && ! -f "$MOTIF2TF_TABLE" ]]; then
+  echo "ERROR: MOTIF2TF_TABLE not found: $MOTIF2TF_TABLE" >&2
   exit 1
 fi
 
@@ -148,24 +161,24 @@ if [[ ! -f "$SCENICPLUS_HOME/scripts/init_scenicplus_project.py" ]]; then
 fi
 
 mkdir -p "$PROJECT_DIR/logs"
-echo "Running environment check..."
-bash "$SCENICPLUS_HOME/bin/check_environment.sh" \
-  --conda-root "$CONDA_ROOT" \
-  --env-name "$ENV_NAME" \
-  2>&1 | tee "$PROJECT_DIR/logs/check_environment.log"
+INIT_CHECK="${SPGRN_INITIALIZE_CHECK:-auto}"
+if [[ "$INIT_CHECK" == "always" ]] || [[ "$INIT_CHECK" == "1" ]] || ! compgen -G "$PROJECT_DIR/logs/check_environment_*.log" >/dev/null; then
+  echo "Running environment check..."
+  "$ENV_PREFIX/bin/spgrn-check"
+else
+  echo "Skipping environment check; existing check log found. Set SPGRN_INITIALIZE_CHECK=always to rerun."
+fi
 
 touch "$CONFIG_FILE"
 update_config_setting "CONDA_ROOT" "$CONDA_ROOT"
 update_config_setting "ENV_NAME" "$ENV_NAME"
 update_config_setting "PROJECT_DIR" "$PROJECT_DIR"
-update_config_setting "ORGANISM" "$ORGANISM"
 update_config_setting "AUTOZYME" "$AUTOZYME"
-update_config_setting "ENSEMBL_RELEASE" "$ENSEMBL_RELEASE"
 update_config_setting "SCENICPLUS_MAX_MEMORY_GB" "$SCENICPLUS_MAX_MEMORY_GB"
-for optional_key in ANNOTATED_OBJECT CELL_LABEL_COLUMN ATAC_INPUT_LAYOUT ATAC_DATA_ROOT; do
+for optional_key in ORGANISM ENSEMBL_RELEASE MOTIF2TF_REFERENCE ANNOTATED_OBJECT CELL_LABEL_COLUMN ATAC_INPUT_LAYOUT ATAC_DATA_ROOT MOTIF2TF_TABLE; do
   optional_value="${!optional_key:-}"
   if [[ -n "$optional_value" ]]; then
-    if [[ "$optional_key" == "ANNOTATED_OBJECT" || "$optional_key" == "ATAC_DATA_ROOT" ]]; then
+    if [[ "$optional_key" == "ANNOTATED_OBJECT" || "$optional_key" == "ATAC_DATA_ROOT" || "$optional_key" == "MOTIF2TF_TABLE" ]]; then
       optional_value="$(expand_path "$optional_value")"
     fi
     update_config_setting "$optional_key" "$optional_value"
@@ -173,16 +186,25 @@ for optional_key in ANNOTATED_OBJECT CELL_LABEL_COLUMN ATAC_INPUT_LAYOUT ATAC_DA
 done
 
 echo "Initializing project parameters and directory layout..."
-"$ENV_PREFIX/bin/python" "$SCENICPLUS_HOME/scripts/init_scenicplus_project.py" \
-  --config "$CONFIG_FILE" \
-  --project-dir "$PROJECT_DIR" \
-  --organism "$ORGANISM" \
-  --autozyme "$AUTOZYME" \
-  --conda-root "$CONDA_ROOT" \
-  --env-name "$ENV_NAME" \
-  --ensembl-release "$ENSEMBL_RELEASE" \
-  --max-memory-gb "$SCENICPLUS_MAX_MEMORY_GB" \
-  2>&1 | tee "$PROJECT_DIR/logs/initialize_scenicplus_project.log"
+init_cmd=(
+  "$ENV_PREFIX/bin/python" "$SCENICPLUS_HOME/scripts/init_scenicplus_project.py"
+  --config "$CONFIG_FILE"
+  --project-dir "$PROJECT_DIR"
+  --autozyme "$AUTOZYME"
+  --conda-root "$CONDA_ROOT"
+  --env-name "$ENV_NAME"
+  --max-memory-gb "$SCENICPLUS_MAX_MEMORY_GB"
+)
+if [[ -n "$ORGANISM" ]]; then
+  init_cmd+=(--organism "$ORGANISM")
+fi
+if [[ -n "$ENSEMBL_RELEASE" ]]; then
+  init_cmd+=(--ensembl-release "$ENSEMBL_RELEASE")
+fi
+if [[ -n "$MOTIF2TF_REFERENCE" ]]; then
+  init_cmd+=(--motif2tf-reference "$MOTIF2TF_REFERENCE")
+fi
+"${init_cmd[@]}" 2>&1 | tee "$PROJECT_DIR/logs/initialize_scenicplus_project.log"
 
 echo "WROTE $CONFIG_FILE"
 

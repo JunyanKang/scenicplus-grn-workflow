@@ -15,6 +15,7 @@ from pathlib import Path
 
 REQUIRED_SCRIPTS = [
     "prepare_official_resources.py",
+    "query_organism_resources.py",
     "init_scenicplus_project.py",
     "set_atac_input_params.py",
     "make_sample_sheet_from_atac_inputs.py",
@@ -58,6 +59,7 @@ REQUIRED_SCRIPTS = [
 ]
 
 REQUIRED_MODULES = [
+    "organism_resources.py",
     "autozyme_runtime.py",
     "autozyme_runtime.R",
 ]
@@ -106,6 +108,23 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--skip-imports", action="store_true")
     parser.add_argument("--skip-commands", action="store_true")
     return parser.parse_args()
+
+
+def infer_env_prefix() -> Path | None:
+    exe = Path(sys.executable).resolve()
+    if exe.parent.name == "bin":
+        return exe.parent.parent
+    return None
+
+
+def infer_home(home_arg: str | None, env_prefix: Path | None) -> Path | None:
+    if home_arg:
+        return Path(home_arg).expanduser().resolve()
+    if env_prefix:
+        candidate = env_prefix / "share" / "scenicplus-grn"
+        if candidate.exists():
+            return candidate
+    return None
 
 
 def ok(label: str, detail: str = "") -> None:
@@ -164,13 +183,14 @@ def main() -> None:
     args = parse_args()
     failures: list[str] = []
 
-    home = Path(args.home).resolve() if args.home else None
+    inferred_prefix = infer_env_prefix()
+    home = infer_home(args.home, inferred_prefix)
     if home is None or not home.exists():
         fail("SCENICPLUS_HOME", "set SCENICPLUS_HOME=$CONDA_PREFIX/share/scenicplus-grn after activating the environment", failures)
     else:
         ok("SCENICPLUS_HOME", str(home))
 
-    conda_prefix = os.environ.get("CONDA_PREFIX") or os.environ.get("CONDA_ENV_PREFIX")
+    conda_prefix = os.environ.get("CONDA_PREFIX") or os.environ.get("CONDA_ENV_PREFIX") or (str(inferred_prefix) if inferred_prefix else "")
     if conda_prefix:
         ok("CONDA_PREFIX", conda_prefix)
     else:
@@ -185,6 +205,7 @@ def main() -> None:
             "VERSION",
             "bin/check_environment.sh",
             "bin/initialize_scenicplus_project.sh",
+            "bin/run_python_entrypoint.py",
             "bin/install_r.R",
             "docs/SCENICPLUS_STEP_BY_STEP.md",
             "docs/SCENICPLUS_STEP_BY_STEP.en.md",

@@ -1,8 +1,8 @@
-"""AutoZyme activation helpers for the SCENIC+ GRN installer.
+"""AutoZyme activation helpers for the SCENIC+ GRN workflow.
 
 The helpers intentionally never install dependencies and never fail an analysis
 because an AutoZyme patch family is unavailable. Installation is handled by the
-installer with no-deps mode; activation is auditable and can be disabled with
+workflow with no-deps mode; activation is auditable and can be disabled with
 AUTOZYME_DISABLED=1.
 """
 from __future__ import annotations

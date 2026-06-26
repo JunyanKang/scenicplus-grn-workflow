@@ -1,10 +1,10 @@
-# scenicplus-grn-installer
+# scenicplus-grn-workflow
 
-Reproducible conda installer and workflow launcher for SCENIC+ gene regulatory
-network analysis from annotated matched snRNA+snATAC / scMultiome data.
+Reproducible workflow toolkit for SCENIC+ gene regulatory network analysis
+from annotated matched snRNA+snATAC / scMultiome data.
 
-The installer creates an isolated `scenicplus-grn` conda environment, installs
-the pinned Python, R, genomics and SCENIC+ layers, and provides `spgrn-*`
+It creates an isolated `scenicplus-grn` conda environment, installs the pinned
+Python, R, genomics and SCENIC+ layers, and provides `spgrn-*`
 commands for project initialization, resource preparation, pycisTopic,
 custom cisTarget database construction, SCENIC+ Snakemake execution and
 postprocessing.
@@ -20,6 +20,7 @@ It is intended for:
 - annotated scMultiome objects plus matched ATAC fragments,
 - metacell-based SCENIC+ runs,
 - custom cisTarget databases built from the project consensus region universe,
+- direct, orthology-mapped, audited generated or user-supplied species-specific motif2TF table preparation and audit,
 - reproducible reruns and output checks.
 
 Detailed analysis instructions live in:
@@ -42,7 +43,7 @@ Linux x86_64      glibc >= 2.17
 macOS arm64       Apple Silicon
 ```
 
-The installer expects an existing conda-style root such as Miniforge,
+The workflow installer expects an existing conda-style root such as Miniforge,
 Miniconda, Mambaforge, Anaconda or `/opt/conda`.
 
 ## Quick Start
@@ -50,11 +51,11 @@ Miniconda, Mambaforge, Anaconda or `/opt/conda`.
 Unpack the release archive on the target machine:
 
 ```bash
-tar -xzf scenicplus-grn-installer.tar.gz
-cd scenicplus-grn-installer
+tar -xzf scenicplus-grn-workflow.tar.gz
+cd scenicplus-grn-workflow
 ```
 
-Run the installer:
+Run the installation:
 
 ```bash
 CONDA_ROOT=/absolute/path/to/conda bash install.sh
@@ -80,7 +81,7 @@ With `tmux`:
 
 ```bash
 tmux new -s scenicplus-install
-cd scenicplus-grn-installer
+cd scenicplus-grn-workflow
 ASSUME_YES=1 CONDA_ROOT=/absolute/path/to/conda bash install.sh
 ```
 
@@ -93,14 +94,14 @@ tmux attach -t scenicplus-install
 Without `tmux`:
 
 ```bash
-cd scenicplus-grn-installer
+cd scenicplus-grn-workflow
 mkdir -p logs
 nohup env ASSUME_YES=1 CONDA_ROOT=/absolute/path/to/conda bash install.sh \
   > logs/nohup_install_$(date +%Y%m%d_%H%M%S).out 2>&1 &
 echo $! > logs/install.pid
 ```
 
-Follow the newest installer log:
+Follow the newest installation log:
 
 ```bash
 tail -f "$(ls -t logs/install_*.log | head -n 1)"
@@ -118,7 +119,7 @@ tail -f "$(ls -t logs/install_*.log | head -n 1)"
 | `INSTALL_MALLET` | `1` | Install MALLET backend for pycisTopic topic modeling. |
 | `AUTO_INSTALL_MAMBA` | `1` | Bootstrap `mamba` into conda base if missing. |
 | `PRECHECK_ONLY` | `0` | Check platform, paths and permissions without installing. |
-| `RELOCATE_INSTALLER` | `1` | Offer to copy the installer to `$CONDA_ROOT/share/scenicplus-grn-installer`. |
+| `RELOCATE_INSTALLER` | `1` | Offer to copy the workflow package to `$CONDA_ROOT/share/scenicplus-grn-workflow`. |
 | `LOG_DIR` | `logs/` | Installer log directory. |
 
 Examples:
@@ -132,14 +133,16 @@ PRECHECK_ONLY=1 CONDA_ROOT=/absolute/path/to/conda bash install.sh
 
 ## What Gets Installed
 
-The environment contains:
+The installation provides:
 
 - SCENIC+, pycisTopic, pycistarget and create_cisTarget_databases,
 - Python single-cell and genomics libraries,
 - R, Seurat, Signac, hdWGCNA and workflow dependencies,
 - command-line tools including `samtools`, `tabix`, `bgzip`, `bedtools`,
   `macs2` and Snakemake,
-- MALLET 2.0.8 by default.
+- MALLET 2.0.8 topic-model backend,
+- `spgrn-*` workflow commands for project initialization, resource preparation,
+  pycisTopic, custom cisTarget, SCENIC+ execution, QC and output generation.
 
 
 ## Verify The Installation
@@ -191,7 +194,7 @@ logs/install_YYYYMMDD_HHMMSS.log
 If the unpacked directory is not writable, logs are written to:
 
 ```text
-/tmp/scenicplus-grn-installer-logs
+/tmp/scenicplus-grn-workflow-logs
 ```
 
 Useful checks:
@@ -203,12 +206,12 @@ source /absolute/path/to/conda/bin/activate scenicplus-grn
 spgrn-check
 ```
 
-For a failed installation, keep the newest installer log and the command that
+For a failed installation, keep the newest installation log and the command that
 was used to start the run.
 
 ## License
 
-The installer and workflow helper code is licensed under the MIT License. The
+The workflow helper and installation scripts are licensed under the MIT License. The
 release package's `archives/vendor.tar.gz` is only an offline cache of
 third-party source archives for reproducible installation; those components
 remain governed by their upstream licenses or terms. In particular, SCENIC+,
