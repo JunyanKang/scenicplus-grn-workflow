@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.55 - 2026-07-02
+
+Fixes fresh Linux installation asset copying.
+
+Highlights:
+
+- Installs `bin/run_python_entrypoint.py` into
+  `$CONDA_PREFIX/share/scenicplus-grn/bin`.
+- Keeps generated Python `spgrn-*` wrappers valid after a fresh installer run.
+- Addresses the real Linux final installation check failure where
+  `bin/run_python_entrypoint.py` was reported missing even though dependency
+  installation had completed.
+
 ## 0.1.54 - 2026-06-26
 
 Adds deeper workflow command validation fixes.

@@ -262,6 +262,7 @@ copy_distribution_assets() {
     "$BIN_DIR/check_environment.sh" \
     "$BIN_DIR/initialize_scenicplus_project.sh" \
     "$BIN_DIR/install_r.R" \
+    "$BIN_DIR/run_python_entrypoint.py" \
     "$target_dir/bin/"
   cp -f \
     "$CONFIG_DIR/pip-constraints.txt" \
@@ -850,7 +851,12 @@ copy_recipe_into_env() {
   if [[ -d "$CONDA_PREFIX/share/scenicplus-grn/scripts" ]]; then
     find "$CONDA_PREFIX/share/scenicplus-grn/scripts" -type f -name "*.py" -exec chmod +x {} \;
   fi
-  chmod +x "$CONDA_PREFIX/share/scenicplus-grn/install.sh" "$CONDA_PREFIX/share/scenicplus-grn/bin/check_environment.sh" "$CONDA_PREFIX/share/scenicplus-grn/bin/initialize_scenicplus_project.sh" "$CONDA_PREFIX/share/scenicplus-grn/bin/install_r.R"
+  chmod +x \
+    "$CONDA_PREFIX/share/scenicplus-grn/install.sh" \
+    "$CONDA_PREFIX/share/scenicplus-grn/bin/check_environment.sh" \
+    "$CONDA_PREFIX/share/scenicplus-grn/bin/initialize_scenicplus_project.sh" \
+    "$CONDA_PREFIX/share/scenicplus-grn/bin/install_r.R" \
+    "$CONDA_PREFIX/share/scenicplus-grn/bin/run_python_entrypoint.py"
   install_env_wrappers
 }
 

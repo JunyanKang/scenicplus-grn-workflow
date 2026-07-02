@@ -6,6 +6,9 @@ This release packages a reproducible SCENIC+/GRN workflow toolkit with a conda i
 
 Main deliverables:
 
+- Fresh Linux installs now copy `bin/run_python_entrypoint.py` into the conda
+  environment workflow share directory, fixing the final installation check
+  failure observed on a real Linux server.
 - Dedicated conda environment installer for `scenicplus-grn`.
 - Offline-capable bundled source archives for unstable GitHub access.
 - Version-locked SCENIC+, pycisTopic, pycistarget, create_cisTarget_databases and Cluster-Buster layer.
