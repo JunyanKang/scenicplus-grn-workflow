@@ -341,11 +341,12 @@ spgrn-validate-and-prepare-sample-sheet
 ```text
 inputs/atac_input_params.tsv
 inputs/sample_sheet.tsv
-inputs/fragments_standardized/
-inputs/peaks_standardized/
+work/standard_peaks/
+work/metacell_fragments/
+results/metacells/metacell_fragment_reassignment.tsv
 ```
 
-继续前检查 `inputs/sample_sheet.tsv` 中的 sample、condition、fragment 路径和 peak 路径。
+继续前检查 `inputs/sample_sheet.tsv` 中的 sample、condition、fragment 路径和 peak 路径。标准化后的 peaks 以及 metacell fragments 路径会写回 `inputs/sample_sheet.tsv`。
 
 ## 5. 运行 pycisTopic workflow
 
@@ -659,6 +660,8 @@ spgrn-run-scenicplus-postprocess --task all --layer all
 --layer all       同时处理 direct 和 extended。
 ```
 
+`inputs/postprocess_params.tsv` 中 `regulon_sign_filter=tf_positive` 是默认正式展示口径，只保留 `+/+` eRegulons；改为 `all` 时才输出全部 signed eRegulons。
+
 主要输出：
 
 ```text
@@ -692,7 +695,7 @@ Embedding：用于定位 eRegulon 活性，不单独作为统计证据。
 Region-gene / overlap：解释 enhancer-target model structure，不直接代表 condition effect。
 Network：展示 TF-target overview；正式主图建议用 source table 重画重点网络。
 Volcano：优先解释 sample-level effect size；独立样本不足时谨慎解释 FDR。
-eRegulon signs：+/+、-/+、-/- 是 SCENIC+ 的 regulon sign，不等同于 TF RNA expression。
+eRegulon signs：`+/+`、`-/+`、`-/-` 是 SCENIC+ 的 regulon sign，不等同于 TF RNA expression。主展示和 condition statistics 默认只保留 TF-positive `+/+` eRegulons；需要探索全部 signed regulons 时，可在 `inputs/postprocess_params.tsv` 中将 `regulon_sign_filter` 改为 `all`。
 ```
 
 正式论文图建议从 source tables 中选择少数关键 eRegulons 重绘，不要直接把全部 detected regulons 放入主图。direct 和 extended eRegulons 应分开呈现，除非图注明确说明合并规则。

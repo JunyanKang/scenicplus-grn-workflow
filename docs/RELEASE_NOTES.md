@@ -6,6 +6,12 @@ This release packages a reproducible SCENIC+/GRN workflow toolkit with a conda i
 
 Main deliverables:
 
+- pycisTopic pseudobulk export now avoids Linux Ray AF_UNIX socket path-length
+  failures by automatically switching long project-local Ray temp paths to a
+  short runtime directory.
+- Postprocess source tables, condition statistics and default PDFs now keep
+  TF-positive `+/+` eRegulons by default; exploratory full signed-regulon output
+  remains available through `regulon_sign_filter=all`.
 - Fresh Linux installs now copy `bin/run_python_entrypoint.py` into the conda
   environment workflow share directory, fixing the final installation check
   failure observed on a real Linux server.

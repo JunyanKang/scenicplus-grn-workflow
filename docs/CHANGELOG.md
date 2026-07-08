@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.1.56 - 2026-07-08
+
+Fixes pycisTopic Ray temp-directory failures and tightens SCENIC+ display
+defaults.
+
+Highlights:
+
+- Makes `spgrn-run-pycistopic-workflow` use an automatic short Ray temporary
+  directory when the project path would make Linux AF_UNIX socket paths exceed
+  the 107-byte limit.
+- Changes the default postprocess display/statistics scope to TF-positive
+  `+/+` eRegulons while retaining `regulon_sign_filter=all` for exploratory
+  signed-regulon output.
+- Removes `+/+` from manuscript-facing eRegulon display labels, while retaining
+  non-default signs when `all` mode is selected.
+- Corrects the step-by-step ATAC output paths from obsolete
+  `inputs/*_standardized/` directories to `work/standard_peaks/`,
+  `work/metacell_fragments/` and the metacell reassignment report.
+
 ## 0.1.55 - 2026-07-02
 
 Fixes fresh Linux installation asset copying.

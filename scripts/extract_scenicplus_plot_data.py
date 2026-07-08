@@ -38,6 +38,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--network-targets-per-tf", type=int, default=12)
     parser.add_argument("--outdir", default="results/scenicplus_figures")
     parser.add_argument("--file-suffix", default="")
+    parser.add_argument(
+        "--regulon-sign-filter",
+        choices=["tf_positive", "all"],
+        default="tf_positive",
+        help="Default keeps only SCENIC+ +/+ eRegulons for source tables and figures. Use all for exploratory signed regulon output.",
+    )
     return parser.parse_args()
 
 
@@ -61,12 +67,41 @@ def tf_from_regulon(name: object) -> str:
     return re.split(r"[_()]", text)[0]
 
 
+def regulon_sign(name: object) -> str | None:
+    match = re.search(r"([+-]/[+-])", clean_regulon_name(name))
+    return match.group(1) if match else None
+
+
+def filter_regulon_columns(auc: pd.DataFrame, mode: str) -> pd.DataFrame:
+    if mode == "all":
+        return auc
+    signs = pd.Series({col: regulon_sign(col) for col in auc.columns}, dtype=object)
+    signed = signs.notna()
+    if not signed.any():
+        print("No SCENIC+ eRegulon sign labels detected; keeping all regulons.")
+        return auc
+    keep = signs.index[signs == "+/+"].tolist()
+    if not keep:
+        raise ValueError("No +/+ eRegulons found after applying --regulon-sign-filter=tf_positive.")
+    print(f"Keeping {len(keep)} +/+ eRegulons; filtered {int(signed.sum()) - len(keep)} non +/+ signed eRegulons.")
+    return auc.loc[:, keep]
+
+
+def filter_eregulon_rows(df: pd.DataFrame, name_col: str, mode: str) -> pd.DataFrame:
+    if mode == "all":
+        return df
+    signs = df[name_col].map(regulon_sign)
+    if signs.notna().any():
+        return df.loc[signs == "+/+"].copy()
+    return df
+
+
 def regulon_display_label(name: object) -> str:
     text = clean_regulon_name(name)
     tf = tf_from_regulon(text)
     genes = re.search(r"\((\d+)g\)", text)
     signs = re.search(r"([+-]/[+-])", text)
-    sign_label = f" {signs.group(1)}" if signs else ""
+    sign_label = f" {signs.group(1)}" if signs and signs.group(1) != "+/+" else ""
     return f"{tf}{sign_label} ({genes.group(1)} targets)" if genes else f"{tf}{sign_label}"
 
 
@@ -253,6 +288,8 @@ def read_network_edges(args: argparse.Namespace, top_tfs: list[str]) -> pd.DataF
             tf_col = choose_column(df.columns, ["TF", "tf", "transcription_factor"])
             gene_col = choose_column(df.columns, ["target_genes", "Target_genes", "genes", "Genes", "gene"])
             name_col = choose_column(df.columns, ["eRegulon_name", "eregulon", "Gene_signame", "Region_signame"])
+            if name_col:
+                df = filter_eregulon_rows(df, name_col, args.regulon_sign_filter)
             for _, row in df.iterrows():
                 tf = str(row[tf_col]) if tf_col else tf_from_regulon(row[name_col]) if name_col else ""
                 if tf not in top_tfs:
@@ -268,6 +305,7 @@ def main() -> None:
     outdir = resolve_project_path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
     auc, meta = read_auc_and_metadata(args)
+    auc = filter_regulon_columns(auc, args.regulon_sign_filter)
 
     group_order = ordered_unique(meta[args.group_col])
     mean_by_group = auc.groupby(meta[args.group_col]).mean().reindex(group_order)
@@ -363,6 +401,7 @@ def main() -> None:
         name_col = choose_column(df.columns, ["eRegulon_name", "eregulon", "Gene_signature_name", "Region_signature_name"])
         region_col = choose_column(df.columns, ["Region", "region"])
         if name_col and region_col:
+            df = filter_eregulon_rows(df, name_col, args.regulon_sign_filter)
             selected = [x for x in top if x in set(df[name_col].astype(str))]
             if len(selected) < 2:
                 selected = list(pd.unique(df[name_col].astype(str)))[: min(20, df[name_col].nunique())]

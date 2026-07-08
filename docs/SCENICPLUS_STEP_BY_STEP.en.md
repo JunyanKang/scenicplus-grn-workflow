@@ -374,12 +374,14 @@ Main outputs:
 ```text
 inputs/atac_input_params.tsv
 inputs/sample_sheet.tsv
-inputs/fragments_standardized/
-inputs/peaks_standardized/
+work/standard_peaks/
+work/metacell_fragments/
+results/metacells/metacell_fragment_reassignment.tsv
 ```
 
 Check sample, condition, fragment path and peak path columns in
-`inputs/sample_sheet.tsv` before continuing.
+`inputs/sample_sheet.tsv` before continuing. Standardized peak paths and
+metacell fragment paths are written back into `inputs/sample_sheet.tsv`.
 
 ## 5. Run The pycisTopic Workflow
 
@@ -723,6 +725,10 @@ Options:
 --layer all       Both direct and extended layers.
 ```
 
+`regulon_sign_filter=tf_positive` in `inputs/postprocess_params.tsv` is the
+default manuscript-facing setting and keeps only `+/+` eRegulons. Set it to
+`all` only when exploratory signed regulon output is needed.
+
 Main outputs:
 
 ```text
@@ -758,7 +764,10 @@ Embedding: localizes eRegulon activity but is not standalone statistical evidenc
 Region-gene / overlap: model structure, not direct condition effect.
 Network: TF-target overview; redraw focused networks from source tables.
 Volcano: prioritize sample-level effect size; interpret FDR carefully with few samples.
-eRegulon signs: +/+, -/+ and -/- are SCENIC+ regulon signs, not TF RNA expression.
+eRegulon signs: `+/+`, `-/+` and `-/-` are SCENIC+ regulon signs, not TF RNA
+expression. Main figures and condition statistics keep TF-positive `+/+`
+eRegulons by default. To explore all signed regulons, set
+`regulon_sign_filter` to `all` in `inputs/postprocess_params.tsv`.
 ```
 
 For manuscripts, redraw a focused set of biologically relevant eRegulons from

@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from datetime import datetime
 import csv
+import hashlib
 import json
 import os
 import pickle
@@ -313,6 +314,36 @@ def expected_pseudobulk_bed_paths(labels: Sequence[str]) -> dict[str, str]:
     }
 
 
+def default_short_ray_temp_dir() -> Path:
+    base = Path(os.environ.get("SCENICPLUS_RAY_TMPDIR") or os.environ.get("RAY_TMPDIR") or "/tmp")
+    digest = hashlib.sha1(str(PROJECT).encode("utf-8")).hexdigest()[:10]
+    uid = os.getuid() if hasattr(os, "getuid") else "user"
+    return base / f"spgrn_ray_{uid}_{digest}"
+
+
+def resolve_ray_temp_dir(value: str) -> Path:
+    requested = (value or "").strip()
+    if requested.lower() in {"", "auto"}:
+        path = default_short_ray_temp_dir()
+    else:
+        path = Path(requested).expanduser()
+        if not path.is_absolute():
+            path = PROJECT / path
+    path = path.resolve()
+    projected_socket = path / "session_YYYY-MM-DD_HH-MM-SS_000000_000000" / "sockets" / "plasma_store"
+    if len(str(projected_socket)) > 100:
+        fallback = default_short_ray_temp_dir().resolve()
+        print(
+            "ray_temp_dir path is too long for Linux AF_UNIX sockets; "
+            f"using {fallback} instead of {path}",
+            file=sys.stderr,
+        )
+        path = fallback
+    path.mkdir(parents=True, exist_ok=True)
+    os.environ["RAY_TMPDIR"] = str(path)
+    return path
+
+
 def expected_macs_narrow_peak_paths(labels: Sequence[str]) -> dict[str, Path]:
     return {
         sanitize_label(label): WORK / "macs2" / f"{sanitize_label(label)}_peaks.narrowPeak"
@@ -569,11 +600,7 @@ def run_pseudobulk_and_peak_calling(
     )
     chromsizes = params["chromsizes"]
     fragments = fragment_paths_by_sample(sample_sheet)
-    ray_temp_dir = Path(params.get("ray_temp_dir", str(PROJECT / "tmp" / "ray")) or (PROJECT / "tmp" / "ray"))
-    if not ray_temp_dir.is_absolute():
-        ray_temp_dir = PROJECT / ray_temp_dir
-    ray_temp_dir = ray_temp_dir.resolve()
-    ray_temp_dir.mkdir(parents=True, exist_ok=True)
+    ray_temp_dir = resolve_ray_temp_dir(params.get("ray_temp_dir", "auto"))
     write_parallelism_plan(
         physical_memory_gb=physical_memory_gb,
         max_memory_gb=max_memory_gb,
