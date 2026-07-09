@@ -6,6 +6,10 @@ This release packages a reproducible SCENIC+/GRN workflow toolkit with a conda i
 
 Main deliverables:
 
+- Installed `spgrn-*` Python entry points now prepend the active conda
+  environment `bin/` directory before running workflow scripts, so subprocesses
+  resolve `Rscript`, `snakemake`, `tabix` and other tools from the installed
+  environment even when the shell was not manually activated.
 - Manual SCENIC+ threshold tuning is now fully wired through the workflow:
   `scenicplus_config.*` overrides for DEM, cisTarget, motif2TF annotation,
   search-space and region-to-gene pruning parameters are written into the final

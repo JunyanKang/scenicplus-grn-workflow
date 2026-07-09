@@ -518,7 +518,7 @@ spgrn-standardize-region-sets
 - Step 5 参数改变后，必须重新运行 Step 5-7，因为 region sets 和 custom cisTarget database 会改变。
 - Step 8.1 中 `scenicplus_config.*` 改变后，必须重新运行 `spgrn-initialize-scenicplus-snakemake`。
 - 如果已经运行过 Step 8.2 split motif enrichment，修改 DEM/cisTarget 阈值后需要用 `--force` 重新运行 Step 8.2。
-- 如果只修改 `rho_threshold`、`min_target_genes` 或 region-to-gene pruning 参数，至少需要重新运行 Step 10 inference。
+- 如果只修改 `rho_threshold`、`min_target_genes` 或 region-to-gene pruning 参数，重新运行 Step 10.5-10.6 的 `--rerun-inference`。
 
 8.2-可选：大型 custom cisTarget database 分块运行 motif enrichment：
 

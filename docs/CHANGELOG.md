@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.63 - 2026-07-09
+
+Hardens installed workflow command execution.
+
+- Prepends the active conda environment `bin/` directory inside the shared
+  Python wrapper entry point, so `spgrn-*` commands consistently call the
+  environment's `Rscript`, `snakemake`, `tabix` and related command-line tools
+  even when the shell was not manually activated.
+- Clarifies that SCENIC+ threshold-only inference reruns should use the
+  documented `--rerun-inference` Step 10.5-10.6 commands.
+
 ## 0.1.62 - 2026-07-09
 
 Documents and exposes SCENIC+ eRegulon recovery thresholds.

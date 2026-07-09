@@ -582,7 +582,7 @@ After parameter changes:
 - If Step 8.2 split motif enrichment already ran, rerun it with `--force` after
   changing DEM/cisTarget thresholds.
 - If only `rho_threshold`, `min_target_genes` or region-to-gene pruning changed,
-  rerun at least Step 10 inference.
+  rerun Step 10.5-10.6 with `--rerun-inference`.
 
 8.2-Optional split motif enrichment for very large custom databases:
 
