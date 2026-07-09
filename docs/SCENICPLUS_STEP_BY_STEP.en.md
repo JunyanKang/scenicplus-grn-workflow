@@ -526,18 +526,63 @@ work/scenicplus/organism_config.yaml
 inputs/scenicplus_config_params.tsv
 ```
 
-Parameters usually worth reviewing:
+If the run returns very few TF-GRNs/eRegulons, first identify which gate is
+reducing the result. SCENIC+ is not a TF-gene co-expression method alone; a
+final eRegulon requires motif-enriched accessible regions, motif2TF annotation,
+TF expression, TF-to-gene links, region-to-gene links and concordant
+TF-region-gene triples. Official parameter references are in the
+[SCENIC+ running tutorial: params_motif_enrichment / params_inference](https://scenicplus.readthedocs.io/en/latest/human_cerebellum.html)
+and the [SCENIC+ API: eRegulon enrichment](https://scenicplus.readthedocs.io/en/latest/api.html#eregulon-enrichment-in-cells).
 
-```text
-seed
-search_space_upstream
-search_space_downstream
-search_space_extend_tss
-dem_motif_hit_thr
-ctx_nes_threshold
-rho_threshold
-min_target_genes
+Parameters that most directly affect TF-GRN recovery:
+
+| Analysis gate | Workflow step | Parameters | Effect when stricter |
+|---|---|---|---|
+| Topic/DAR region sets | Step 5 | `pycistopic.ntop_regions`, `pycistopic.dar_adjpval_thr`, `pycistopic.dar_log2fc_thr` | Fewer or weaker regions enter motif enrichment. |
+| cisTarget motif enrichment | Step 8.1/8.2 | `scenicplus_config.ctx_nes_threshold`, `scenicplus_config.ctx_auc_threshold`, `scenicplus_config.ctx_rank_threshold` | Fewer enriched motifs and cistromes. |
+| DEM motif enrichment | Step 8.1/8.2 | `scenicplus_config.dem_adj_pval_thr`, `scenicplus_config.dem_log2fc_thr`, `scenicplus_config.dem_mean_fg_thr`, `scenicplus_config.dem_motif_hit_thr` | Fewer DEM-supported motifs/TFs, especially for DAR-derived evidence. |
+| motif2TF annotation | Step 1/8.1 | `scenicplus_config.motif_similarity_fdr`, `scenicplus_config.orthologous_identity_threshold`, motif2TF direct/mapped/generated/user strategy | Motifs can be enriched but fail to map to TFs. |
+| Enhancer-gene search space | Step 8.1 | `scenicplus_config.search_space_upstream`, `scenicplus_config.search_space_downstream`, `scenicplus_config.search_space_extend_tss` | Too narrow can miss distal enhancers; too broad can add noise. |
+| Region-to-gene pruning | Step 8.1/10 | `scenicplus_config.quantile_thresholds_region_to_gene`, `scenicplus_config.top_n_regionTogenes_per_gene`, `scenicplus_config.top_n_regionTogenes_per_region`, `scenicplus_config.min_regions_per_gene` | Fewer region-gene links enter eGRN assembly. |
+| TF-gene / region-gene concordance | Step 8.1/10 | `scenicplus_config.rho_threshold` | Fewer concordant TF-region-gene triples. |
+| eRegulon size filter | Step 8.1/10 | `scenicplus_config.min_target_genes` | Small target-set TFs are filtered; this is a common final eRegulon-count gate. |
+
+8.1a-Optional: adjust SCENIC+ recovery thresholds. The following is an
+exploratory diagnostic example and should not be used as a final analysis
+without auditing the additional TFs/edges:
+
+```bash
+spgrn-setup-workflow-params --section scenicplus_config \
+  --set scenicplus_config.min_target_genes=5 \
+  --set scenicplus_config.ctx_nes_threshold=2.5 \
+  --set scenicplus_config.dem_adj_pval_thr=0.10 \
+  --set scenicplus_config.rho_threshold=0.03
+
+spgrn-initialize-scenicplus-snakemake
 ```
+
+If Step 5 produced too few topic/DAR region sets, adjust pycisTopic parameters
+and rerun from Step 5:
+
+```bash
+spgrn-setup-workflow-params --section pycistopic \
+  --set pycistopic.ntop_regions=5000 \
+  --set pycistopic.dar_adjpval_thr=0.10
+
+spgrn-run-pycistopic-workflow
+spgrn-standardize-region-sets
+```
+
+After parameter changes:
+
+- If Step 5 parameters changed, rerun Steps 5-7 because region sets and the
+  custom cisTarget database change.
+- If `scenicplus_config.*` changed in Step 8.1, rerun
+  `spgrn-initialize-scenicplus-snakemake`.
+- If Step 8.2 split motif enrichment already ran, rerun it with `--force` after
+  changing DEM/cisTarget thresholds.
+- If only `rho_threshold`, `min_target_genes` or region-to-gene pruning changed,
+  rerun at least Step 10 inference.
 
 8.2-Optional split motif enrichment for very large custom databases:
 

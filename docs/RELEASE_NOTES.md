@@ -6,6 +6,13 @@ This release packages a reproducible SCENIC+/GRN workflow toolkit with a conda i
 
 Main deliverables:
 
+- Manual SCENIC+ threshold tuning is now fully wired through the workflow:
+  `scenicplus_config.*` overrides for DEM, cisTarget, motif2TF annotation,
+  search-space and region-to-gene pruning parameters are written into the final
+  Snakemake `config.yaml`.
+- Step-by-step documentation now explains why TF-GRN/eRegulon recovery can be
+  low, which parameters control each analysis gate, and which workflow step
+  must be rerun after each class of parameter change.
 - Workflow-only updates now support both connected and restricted-network
   machines: use `--latest` when GitHub is available, or `--archive
   /path/to/scenicplus-grn-workflow-v*.tar.gz` when the release package was

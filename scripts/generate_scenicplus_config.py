@@ -29,10 +29,27 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--search-space-upstream", default=None)
     parser.add_argument("--search-space-downstream", default=None)
     parser.add_argument("--search-space-extend-tss", default=None)
+    parser.add_argument("--fraction-overlap-w-ctx-database", type=float, default=None)
+    parser.add_argument("--fraction-overlap-w-dem-database", type=float, default=None)
+    parser.add_argument("--dem-balance-number-of-promoters", default=None)
+    parser.add_argument("--dem-promoter-space", type=int, default=None)
+    parser.add_argument("--ctx-auc-threshold", type=float, default=None)
     parser.add_argument("--dem-motif-hit-thr", type=float, default=None)
+    parser.add_argument("--dem-adj-pval-thr", type=float, default=None)
+    parser.add_argument("--dem-log2fc-thr", type=float, default=None)
+    parser.add_argument("--dem-mean-fg-thr", type=float, default=None)
+    parser.add_argument("--dem-max-bg-regions", type=int, default=None)
     parser.add_argument("--dem-n-cpu", type=int, default=None)
     parser.add_argument("--ctx-nes-threshold", type=float, default=None)
+    parser.add_argument("--ctx-rank-threshold", type=float, default=None)
     parser.add_argument("--ctx-n-cpu", type=int, default=None)
+    parser.add_argument("--motif-similarity-fdr", type=float, default=None)
+    parser.add_argument("--orthologous-identity-threshold", type=float, default=None)
+    parser.add_argument("--gsea-n-perm", type=int, default=None)
+    parser.add_argument("--quantile-thresholds-region-to-gene", default=None)
+    parser.add_argument("--top-n-regiontogenes-per-gene", default=None)
+    parser.add_argument("--top-n-regiontogenes-per-region", default=None)
+    parser.add_argument("--min-regions-per-gene", type=int, default=None)
     parser.add_argument("--rho-threshold", type=float, default=None)
     parser.add_argument("--min-target-genes", type=int, default=None)
     return parser.parse_args()
@@ -94,6 +111,32 @@ def get_value(cli_value: Any, params: dict[str, str], key: str, cast):
     return cast(params[key])
 
 
+def str_to_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    text = str(value).strip().lower()
+    if text in {"1", "true", "t", "yes", "y", "on"}:
+        return True
+    if text in {"0", "false", "f", "no", "n", "off"}:
+        return False
+    raise ValueError(f"Cannot parse boolean value: {value}")
+
+
+def set_optional_param(
+    config: dict[str, Any],
+    section: str,
+    key: str,
+    cli_value: Any,
+    params: dict[str, str],
+    cast,
+) -> None:
+    if cli_value is not None:
+        config[section][key] = cli_value
+        return
+    if key in params and params[key] != "":
+        config[section][key] = cast(params[key])
+
+
 def main() -> None:
     args = parse_args()
     project_dir = Path(args.project_dir or os.environ.get("PROJECT_DIR", ".")).expanduser().resolve()
@@ -123,10 +166,27 @@ def main() -> None:
     config["params_data_preparation"]["search_space_upstream"] = get_value(args.search_space_upstream, params, "search_space_upstream", str)
     config["params_data_preparation"]["search_space_downstream"] = get_value(args.search_space_downstream, params, "search_space_downstream", str)
     config["params_data_preparation"]["search_space_extend_tss"] = get_value(args.search_space_extend_tss, params, "search_space_extend_tss", str)
+    set_optional_param(config, "params_motif_enrichment", "fraction_overlap_w_ctx_database", args.fraction_overlap_w_ctx_database, params, float)
+    set_optional_param(config, "params_motif_enrichment", "fraction_overlap_w_dem_database", args.fraction_overlap_w_dem_database, params, float)
+    set_optional_param(config, "params_motif_enrichment", "dem_balance_number_of_promoters", args.dem_balance_number_of_promoters, params, str_to_bool)
+    set_optional_param(config, "params_motif_enrichment", "dem_promoter_space", args.dem_promoter_space, params, int)
+    set_optional_param(config, "params_motif_enrichment", "ctx_auc_threshold", args.ctx_auc_threshold, params, float)
+    set_optional_param(config, "params_motif_enrichment", "ctx_rank_threshold", args.ctx_rank_threshold, params, float)
+    set_optional_param(config, "params_motif_enrichment", "dem_max_bg_regions", args.dem_max_bg_regions, params, int)
+    set_optional_param(config, "params_motif_enrichment", "dem_adj_pval_thr", args.dem_adj_pval_thr, params, float)
+    set_optional_param(config, "params_motif_enrichment", "dem_log2fc_thr", args.dem_log2fc_thr, params, float)
+    set_optional_param(config, "params_motif_enrichment", "dem_mean_fg_thr", args.dem_mean_fg_thr, params, float)
     config["params_motif_enrichment"]["dem_motif_hit_thr"] = get_value(args.dem_motif_hit_thr, params, "dem_motif_hit_thr", float)
     config["params_motif_enrichment"]["dem_n_cpu"] = get_value(args.dem_n_cpu, params, "dem_n_cpu", int)
     config["params_motif_enrichment"]["ctx_nes_threshold"] = get_value(args.ctx_nes_threshold, params, "ctx_nes_threshold", float)
     config["params_motif_enrichment"]["ctx_n_cpu"] = get_value(args.ctx_n_cpu, params, "ctx_n_cpu", int)
+    set_optional_param(config, "params_motif_enrichment", "motif_similarity_fdr", args.motif_similarity_fdr, params, float)
+    set_optional_param(config, "params_motif_enrichment", "orthologous_identity_threshold", args.orthologous_identity_threshold, params, float)
+    set_optional_param(config, "params_inference", "gsea_n_perm", args.gsea_n_perm, params, int)
+    set_optional_param(config, "params_inference", "quantile_thresholds_region_to_gene", args.quantile_thresholds_region_to_gene, params, str)
+    set_optional_param(config, "params_inference", "top_n_regionTogenes_per_gene", args.top_n_regiontogenes_per_gene, params, str)
+    set_optional_param(config, "params_inference", "top_n_regionTogenes_per_region", args.top_n_regiontogenes_per_region, params, str)
+    set_optional_param(config, "params_inference", "min_regions_per_gene", args.min_regions_per_gene, params, int)
     config["params_inference"]["rho_threshold"] = get_value(args.rho_threshold, params, "rho_threshold", float)
     config["params_inference"]["min_target_genes"] = get_value(args.min_target_genes, params, "min_target_genes", int)
 

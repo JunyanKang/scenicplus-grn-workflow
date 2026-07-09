@@ -475,18 +475,50 @@ work/scenicplus/organism_config.yaml
 inputs/scenicplus_config_params.tsv
 ```
 
-可按研究设计调整的核心参数：
+如果获得的 TF-GRN/eRegulon 很少，先按层级判断是哪一个 gate 在减少结果。SCENIC+ 不是只做 TF-gene 共表达；它要求 motif enriched regions、motif2TF annotation、TF expression、TF-to-gene links、region-to-gene links 和 TF-region-gene 三者一致性共同成立。官方参数说明见 [SCENIC+ Running tutorial: params_motif_enrichment / params_inference](https://scenicplus.readthedocs.io/en/latest/human_cerebellum.html) 和 [SCENIC+ API: eRegulon enrichment](https://scenicplus.readthedocs.io/en/latest/api.html#eregulon-enrichment-in-cells)。
 
-```text
-seed
-search_space_upstream
-search_space_downstream
-search_space_extend_tss
-dem_motif_hit_thr
-ctx_nes_threshold
-rho_threshold
-min_target_genes
+最直接影响 TF-GRN 捕获数目的参数：
+
+| 分析 gate | 当前流程位置 | 参数 | 越严格时的影响 |
+|---|---|---|---|
+| topic/DAR region sets | Step 5 | `pycistopic.ntop_regions`, `pycistopic.dar_adjpval_thr`, `pycistopic.dar_log2fc_thr` | 进入 motif enrichment 的 regions 变少或偏弱，后续 TF 候选减少。 |
+| cisTarget motif enrichment | Step 8.1/8.2 | `scenicplus_config.ctx_nes_threshold`, `scenicplus_config.ctx_auc_threshold`, `scenicplus_config.ctx_rank_threshold` | enriched motifs 和 cistromes 减少。 |
+| DEM motif enrichment | Step 8.1/8.2 | `scenicplus_config.dem_adj_pval_thr`, `scenicplus_config.dem_log2fc_thr`, `scenicplus_config.dem_mean_fg_thr`, `scenicplus_config.dem_motif_hit_thr` | DEM 支持的 motif/TF 减少；DAR-derived evidence 尤其敏感。 |
+| motif2TF annotation | Step 1/8.1 | `scenicplus_config.motif_similarity_fdr`, `scenicplus_config.orthologous_identity_threshold`, motif2TF direct/mapped/generated/user 策略 | motif enriched 但映射不到 TF，direct/extended cistromes 会少。 |
+| enhancer-gene search space | Step 8.1 | `scenicplus_config.search_space_upstream`, `scenicplus_config.search_space_downstream`, `scenicplus_config.search_space_extend_tss` | 候选 region-gene pairs 变少或变宽；过窄会漏 distal enhancers，过宽会增加噪声。 |
+| region-to-gene pruning | Step 8.1/10 | `scenicplus_config.quantile_thresholds_region_to_gene`, `scenicplus_config.top_n_regionTogenes_per_gene`, `scenicplus_config.top_n_regionTogenes_per_region`, `scenicplus_config.min_regions_per_gene` | 进入 eGRN 合并的 region-gene links 减少。 |
+| TF-gene / region-gene concordance | Step 8.1/10 | `scenicplus_config.rho_threshold` | 相关性 gate 更严，方向一致的 TF-region-gene triples 减少。 |
+| eRegulon size filter | Step 8.1/10 | `scenicplus_config.min_target_genes` | 小 target-set TF 被过滤；这是最常见的最终 eRegulon 数量 gate。 |
+
+8.1a-可选：调整 SCENIC+ 捕获阈值。下面是探索性诊断示例，不建议不加审计地作为正式结论：
+
+```bash
+spgrn-setup-workflow-params --section scenicplus_config \
+  --set scenicplus_config.min_target_genes=5 \
+  --set scenicplus_config.ctx_nes_threshold=2.5 \
+  --set scenicplus_config.dem_adj_pval_thr=0.10 \
+  --set scenicplus_config.rho_threshold=0.03
+
+spgrn-initialize-scenicplus-snakemake
 ```
+
+如果怀疑 Step 5 产生的 topic/DAR region sets 太少，调整 pycisTopic 参数并从 Step 5 重新运行：
+
+```bash
+spgrn-setup-workflow-params --section pycistopic \
+  --set pycistopic.ntop_regions=5000 \
+  --set pycistopic.dar_adjpval_thr=0.10
+
+spgrn-run-pycistopic-workflow
+spgrn-standardize-region-sets
+```
+
+参数修改后的生效范围：
+
+- Step 5 参数改变后，必须重新运行 Step 5-7，因为 region sets 和 custom cisTarget database 会改变。
+- Step 8.1 中 `scenicplus_config.*` 改变后，必须重新运行 `spgrn-initialize-scenicplus-snakemake`。
+- 如果已经运行过 Step 8.2 split motif enrichment，修改 DEM/cisTarget 阈值后需要用 `--force` 重新运行 Step 8.2。
+- 如果只修改 `rho_threshold`、`min_target_genes` 或 region-to-gene pruning 参数，至少需要重新运行 Step 10 inference。
 
 8.2-可选：大型 custom cisTarget database 分块运行 motif enrichment：
 

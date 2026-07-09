@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.62 - 2026-07-09
+
+Documents and exposes SCENIC+ eRegulon recovery thresholds.
+
+Highlights:
+
+- Expands `generate_scenicplus_config.py` so manual overrides for DEM,
+  cisTarget, motif2TF annotation, search-space and region-to-gene pruning
+  parameters propagate into the final SCENIC+ Snakemake `config.yaml`.
+- Adds defaults for the same parameters to `inputs/scenicplus_config_params.tsv`
+  through `setup_workflow_params.py`.
+- Adds a Step 8 troubleshooting guide for low TF-GRN/eRegulon recovery, with
+  official SCENIC+ source links and workflow-step-specific rerun guidance.
+
 ## 0.1.61 - 2026-07-09
 
 Adds offline workflow-only updates from local release archives.
