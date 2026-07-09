@@ -71,16 +71,21 @@ package:
 ```bash
 CONDA_ROOT=/absolute/path/to/conda
 ENV_NAME=scenicplus-grn
-VERSION=0.1.58
+DOWNLOAD_URL="$(
+  curl -fsSL https://api.github.com/repos/JunyanKang/scenicplus-grn-workflow/releases/latest |
+    grep -Eo 'https://github.com/JunyanKang/scenicplus-grn-workflow/releases/download/[^"]+/scenicplus-grn-workflow-v[^"]+\.tar\.gz' |
+    head -n 1
+)"
+test -n "$DOWNLOAD_URL"
+ARCHIVE="$CONDA_ROOT/$(basename "$DOWNLOAD_URL")"
 
 cd "$CONDA_ROOT"
 rm -rf "$CONDA_ROOT/scenicplus-grn-workflow"
-rm -f  "$CONDA_ROOT/scenicplus-grn-workflow-v${VERSION}.tar.gz"
+rm -f "$ARCHIVE"
 
-wget -O "$CONDA_ROOT/scenicplus-grn-workflow-v${VERSION}.tar.gz" \
-  "https://github.com/JunyanKang/scenicplus-grn-workflow/releases/download/v${VERSION}/scenicplus-grn-workflow-v${VERSION}.tar.gz"
+curl -L --retry 3 -o "$ARCHIVE" "$DOWNLOAD_URL"
 
-tar -xzf "$CONDA_ROOT/scenicplus-grn-workflow-v${VERSION}.tar.gz" -C "$CONDA_ROOT"
+tar -xzf "$ARCHIVE" -C "$CONDA_ROOT"
 cd "$CONDA_ROOT/scenicplus-grn-workflow"
 ```
 

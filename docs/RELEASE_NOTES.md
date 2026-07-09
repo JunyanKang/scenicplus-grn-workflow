@@ -6,6 +6,8 @@ This release packages a reproducible SCENIC+/GRN workflow toolkit with a conda i
 
 Main deliverables:
 
+- README workflow-only update commands now resolve the latest release archive
+  dynamically instead of hard-coding a literal version number.
 - README workflow-only update instructions now include the safe sequence for
   removing the old unpacked release directory, downloading the new archive,
   running `bash install.sh --update workflow`, and validating installed assets

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.59 - 2026-07-09
+
+Removes hard-coded release versions from README update commands.
+
+Highlights:
+
+- Workflow-only update examples now resolve the latest GitHub release asset
+  dynamically from the GitHub Releases API.
+- The README no longer needs to be edited only to update a literal
+  `VERSION=x.y.z` value after each release.
+
 ## 0.1.58 - 2026-07-09
 
 Clarifies workflow-only update instructions.
