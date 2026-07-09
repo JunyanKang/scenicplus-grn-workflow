@@ -6,6 +6,10 @@ This release packages a reproducible SCENIC+/GRN workflow toolkit with a conda i
 
 Main deliverables:
 
+- README workflow-only update instructions now include the safe sequence for
+  removing the old unpacked release directory, downloading the new archive,
+  running `bash install.sh --update workflow`, and validating installed assets
+  without deleting `$CONDA_ROOT/envs/$ENV_NAME`.
 - Workflow-only update mode: `bash install.sh --update workflow` syncs
   `share/scenicplus-grn` scripts, docs and config into an existing environment
   without running conda/mamba, pip, R, AutoZyme or MALLET installation.

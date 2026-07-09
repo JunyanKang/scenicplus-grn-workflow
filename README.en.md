@@ -65,16 +65,43 @@ DONE: SCENIC+ environment is installed and checked.
 
 When the release notes state that only analysis scripts, documentation or config
 under `share/scenicplus-grn` changed, update the workflow layer without touching
-the conda dependency environment:
+the conda dependency environment. First download and unpack the new release
+package:
 
 ```bash
-CONDA_ROOT=/absolute/path/to/conda ASSUME_YES=1 bash install.sh --update workflow
+CONDA_ROOT=/absolute/path/to/conda
+ENV_NAME=scenicplus-grn
+VERSION=0.1.58
+
+cd "$CONDA_ROOT"
+rm -rf "$CONDA_ROOT/scenicplus-grn-workflow"
+rm -f  "$CONDA_ROOT/scenicplus-grn-workflow-v${VERSION}.tar.gz"
+
+wget -O "$CONDA_ROOT/scenicplus-grn-workflow-v${VERSION}.tar.gz" \
+  "https://github.com/JunyanKang/scenicplus-grn-workflow/releases/download/v${VERSION}/scenicplus-grn-workflow-v${VERSION}.tar.gz"
+
+tar -xzf "$CONDA_ROOT/scenicplus-grn-workflow-v${VERSION}.tar.gz" -C "$CONDA_ROOT"
+cd "$CONDA_ROOT/scenicplus-grn-workflow"
+```
+
+Then update only the workflow layer:
+
+```bash
+CONDA_ROOT="$CONDA_ROOT" ENV_NAME="$ENV_NAME" ASSUME_YES=1 bash install.sh --update workflow
 ```
 
 This mode does not run conda/mamba, pip, R, AutoZyme or MALLET installation. It
 only updates `$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn`, refreshes the
-`spgrn-*` wrappers and runs the workflow asset check. The default
-`ENV_NAME` is `scenicplus-grn`.
+`spgrn-*` wrappers and runs the workflow asset check. The
+`rm -rf "$CONDA_ROOT/scenicplus-grn-workflow"` command above only removes the old
+unpacked release directory. It does not remove the conda environment; do not
+delete `$CONDA_ROOT/envs/$ENV_NAME`.
+
+Check the update:
+
+```bash
+"$CONDA_ROOT/envs/$ENV_NAME/bin/spgrn-check-workflow-installation" --skip-imports --skip-commands
+```
 
 ## Background Installation
 

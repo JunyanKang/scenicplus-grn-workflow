@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.58 - 2026-07-09
+
+Clarifies workflow-only update instructions.
+
+Highlights:
+
+- Expands README workflow-only update instructions to include safe removal of
+  the previous unpacked release directory, download of the new release archive,
+  `bash install.sh --update workflow`, and the asset-only validation command.
+- Explicitly notes that removing `$CONDA_ROOT/scenicplus-grn-workflow` does not
+  remove the existing conda environment under `$CONDA_ROOT/envs/$ENV_NAME`.
+
 ## 0.1.57 - 2026-07-09
 
 Adds workflow-only update mode.
