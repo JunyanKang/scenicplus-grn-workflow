@@ -61,33 +61,6 @@ A successful run ends with:
 DONE: SCENIC+ environment is installed and checked.
 ```
 
-## Workflow-Only Updates
-
-When the release notes state that only analysis scripts, documentation or config
-under `share/scenicplus-grn` changed, update the workflow layer without touching
-the conda dependency environment. Enter any unpacked `scenicplus-grn-workflow`
-directory. If the installer relocated the package with the default settings,
-this is usually `$CONDA_ROOT/share/scenicplus-grn-workflow`:
-
-```bash
-CONDA_ROOT=/absolute/path/to/conda
-ENV_NAME=scenicplus-grn
-cd "$CONDA_ROOT/share/scenicplus-grn-workflow"
-CONDA_ROOT="$CONDA_ROOT" ENV_NAME="$ENV_NAME" ASSUME_YES=1 bash install.sh --update workflow --latest
-```
-
-`--latest` resolves the latest release archive, downloads it to a temporary
-directory, unpacks it and delegates the workflow-only update to the new package.
-This mode does not run conda/mamba, pip, R, AutoZyme or MALLET installation. It
-only updates `$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn`, refreshes the
-`spgrn-*` wrappers and runs the workflow asset check.
-
-Check the update:
-
-```bash
-"$CONDA_ROOT/envs/$ENV_NAME/bin/spgrn-check-workflow-installation" --skip-imports --skip-commands
-```
-
 ## Background Installation
 
 Long server installs should run in `tmux` or with `nohup`.
@@ -136,6 +109,7 @@ tail -f "$(ls -t logs/install_*.log | head -n 1)"
 | `AUTO_INSTALL_MAMBA` | `1` | Bootstrap `mamba` into conda base if missing. |
 | `PRECHECK_ONLY` | `0` | Check platform, paths and permissions without installing. |
 | `RELOCATE_INSTALLER` | `1` | Offer to copy the workflow package to `$CONDA_ROOT/share/scenicplus-grn-workflow`. |
+| `WORKFLOW_UPDATE_ARCHIVE` | empty | Local release archive for workflow-only updates. |
 | `LOG_DIR` | `logs/` | Installer log directory. |
 
 Examples:
@@ -195,6 +169,41 @@ GitHub retries fail. To skip GitHub entirely:
 
 ```bash
 GITHUB_TRIES=0 CONDA_ROOT=/absolute/path/to/conda bash install.sh
+```
+
+## Workflow-Only Updates
+
+When the release notes state that only analysis scripts, documentation or config
+under `share/scenicplus-grn` changed, update the workflow layer without touching
+the conda dependency environment. This mode does not run conda/mamba, pip, R,
+AutoZyme or MALLET installation. It only updates
+`$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn`, refreshes the `spgrn-*`
+wrappers and runs the workflow asset check.
+
+If the machine can access GitHub:
+
+```bash
+CONDA_ROOT=/absolute/path/to/conda
+ENV_NAME=scenicplus-grn
+cd "$CONDA_ROOT/share/scenicplus-grn-workflow"
+CONDA_ROOT="$CONDA_ROOT" ENV_NAME="$ENV_NAME" ASSUME_YES=1 bash install.sh --update workflow --latest
+```
+
+If the machine cannot access GitHub but the release package has been copied
+locally:
+
+```bash
+CONDA_ROOT=/absolute/path/to/conda
+ENV_NAME=scenicplus-grn
+ARCHIVE=/absolute/path/to/scenicplus-grn-workflow-vX.Y.Z.tar.gz
+cd "$CONDA_ROOT/share/scenicplus-grn-workflow"
+CONDA_ROOT="$CONDA_ROOT" ENV_NAME="$ENV_NAME" ASSUME_YES=1 bash install.sh --update workflow --archive "$ARCHIVE"
+```
+
+Check the update:
+
+```bash
+"$CONDA_ROOT/envs/$ENV_NAME/bin/spgrn-check-workflow-installation" --skip-imports --skip-commands
 ```
 
 ## License

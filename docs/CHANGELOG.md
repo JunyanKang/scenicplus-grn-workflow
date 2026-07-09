@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.61 - 2026-07-09
+
+Adds offline workflow-only updates from local release archives.
+
+Highlights:
+
+- Adds `bash install.sh --update workflow --archive /path/to/release.tar.gz`
+  for servers that cannot access GitHub but have a copied release package.
+- Keeps `--latest` for GitHub-connected machines and uses the same internal
+  unpack/delegate workflow for both online and local archives.
+- Moves README workflow-only update instructions after the offline/restricted
+  network installation section and documents both network cases explicitly.
+
 ## 0.1.60 - 2026-07-09
 
 Encapsulates latest-release workflow updates in the installer.

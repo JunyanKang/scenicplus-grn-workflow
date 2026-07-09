@@ -56,31 +56,6 @@ ASSUME_YES=1 CONDA_ROOT=/absolute/path/to/conda bash install.sh
 DONE: SCENIC+ environment is installed and checked.
 ```
 
-## 只更新 workflow 脚本
-
-如果 release 说明写明只是更新 `share/scenicplus-grn` 中的分析脚本、文档或配置，
-不涉及 conda 依赖版本，可以在已有环境上只同步 workflow layer。进入任意已解压的
-`scenicplus-grn-workflow` 目录；如果按默认安装器迁移过，通常是
-`$CONDA_ROOT/share/scenicplus-grn-workflow`：
-
-```bash
-CONDA_ROOT=/absolute/path/to/conda
-ENV_NAME=scenicplus-grn
-cd "$CONDA_ROOT/share/scenicplus-grn-workflow"
-CONDA_ROOT="$CONDA_ROOT" ENV_NAME="$ENV_NAME" ASSUME_YES=1 bash install.sh --update workflow --latest
-```
-
-`--latest` 会在脚本内部解析最新 release、下载到临时目录、解压并委托新包执行
-workflow-only 更新。这个模式不会运行 conda/mamba、pip、R、AutoZyme 或 MALLET 安装；
-它只更新 `$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn`，刷新 `spgrn-*` wrappers，
-并运行 workflow asset 检查。
-
-更新后可检查：
-
-```bash
-"$CONDA_ROOT/envs/$ENV_NAME/bin/spgrn-check-workflow-installation" --skip-imports --skip-commands
-```
-
 ## 后台安装
 
 服务器安装耗时较长时，建议用 `tmux` 或 `nohup`。
@@ -129,6 +104,7 @@ tail -f "$(ls -t logs/install_*.log | head -n 1)"
 | `AUTO_INSTALL_MAMBA` | `1` | 如果 base 里没有 mamba，自动安装 mamba。 |
 | `PRECHECK_ONLY` | `0` | 只检查平台、路径和权限，不安装。 |
 | `RELOCATE_INSTALLER` | `1` | 询问是否复制 workflow 包到 `$CONDA_ROOT/share/scenicplus-grn-workflow`。 |
+| `WORKFLOW_UPDATE_ARCHIVE` | 空 | workflow-only 更新时使用的本地 release archive。 |
 | `LOG_DIR` | `logs/` | 安装日志目录。 |
 
 示例：
@@ -185,6 +161,39 @@ archives/vendor.tar.gz
 
 ```bash
 GITHUB_TRIES=0 CONDA_ROOT=/absolute/path/to/conda bash install.sh
+```
+
+## 只更新 workflow 脚本
+
+如果 release 说明写明只是更新 `share/scenicplus-grn` 中的分析脚本、文档或配置，
+不涉及 conda 依赖版本，可以在已有环境上只同步 workflow layer。这个模式不会运行
+conda/mamba、pip、R、AutoZyme 或 MALLET 安装；它只更新
+`$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn`，刷新 `spgrn-*` wrappers，并运行
+workflow asset 检查。
+
+机器可以连接 GitHub 时：
+
+```bash
+CONDA_ROOT=/absolute/path/to/conda
+ENV_NAME=scenicplus-grn
+cd "$CONDA_ROOT/share/scenicplus-grn-workflow"
+CONDA_ROOT="$CONDA_ROOT" ENV_NAME="$ENV_NAME" ASSUME_YES=1 bash install.sh --update workflow --latest
+```
+
+机器不能连接 GitHub、但已经把 release package copy 到本地时：
+
+```bash
+CONDA_ROOT=/absolute/path/to/conda
+ENV_NAME=scenicplus-grn
+ARCHIVE=/absolute/path/to/scenicplus-grn-workflow-vX.Y.Z.tar.gz
+cd "$CONDA_ROOT/share/scenicplus-grn-workflow"
+CONDA_ROOT="$CONDA_ROOT" ENV_NAME="$ENV_NAME" ASSUME_YES=1 bash install.sh --update workflow --archive "$ARCHIVE"
+```
+
+更新后可检查：
+
+```bash
+"$CONDA_ROOT/envs/$ENV_NAME/bin/spgrn-check-workflow-installation" --skip-imports --skip-commands
 ```
 
 ## 许可证

@@ -6,6 +6,10 @@ This release packages a reproducible SCENIC+/GRN workflow toolkit with a conda i
 
 Main deliverables:
 
+- Workflow-only updates now support both connected and restricted-network
+  machines: use `--latest` when GitHub is available, or `--archive
+  /path/to/scenicplus-grn-workflow-v*.tar.gz` when the release package was
+  copied locally.
 - `bash install.sh --update workflow --latest` now resolves, downloads and
   unpacks the latest release package internally, so users no longer copy a long
   manual GitHub API download block.

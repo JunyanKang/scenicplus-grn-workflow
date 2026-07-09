@@ -9,6 +9,7 @@ LOCKS_DIR="${LOCKS_DIR:-$CONFIG_DIR/locks}"
 ENV_NAME="${ENV_NAME:-scenicplus-grn}"
 MODE="${MODE:-new}"
 UPDATE_FROM_LATEST="${UPDATE_FROM_LATEST:-0}"
+WORKFLOW_UPDATE_ARCHIVE="${WORKFLOW_UPDATE_ARCHIVE:-}"
 INSTALL_R="${INSTALL_R:-1}"
 FORCE="${FORCE:-0}"
 ALLOW_BASE="${ALLOW_BASE:-0}"
@@ -49,6 +50,7 @@ Usage:
   bash install.sh
   bash install.sh --update workflow
   bash install.sh --update workflow --latest
+  bash install.sh --update workflow --archive /absolute/path/to/scenicplus-grn-workflow-v*.tar.gz
 
 Recommended workflow:
   tar -xzf scenicplus-grn-workflow-v*.tar.gz
@@ -83,6 +85,8 @@ Options:
   PRECHECK_ONLY=1               Check detection/permissions and exit before install.
   LOG_DIR=/path/to/logs         Override installation log directory.
   UPDATE_FROM_LATEST=1          With MODE=workflow, download the latest release first.
+  WORKFLOW_UPDATE_ARCHIVE=/path/to/archive.tar.gz
+                                With MODE=workflow, update from a local release archive.
 EOF
 }
 
@@ -103,6 +107,11 @@ parse_cli_args() {
         ;;
       --latest|--from-latest)
         UPDATE_FROM_LATEST="1"
+        ;;
+      --archive|--local-archive)
+        shift
+        [[ -n "${1:-}" ]] || die "--archive requires a local release archive path"
+        WORKFLOW_UPDATE_ARCHIVE="$1"
         ;;
       *)
         usage
@@ -154,6 +163,15 @@ validate_settings() {
   if [[ ! "$R_INSTALL_NCPUS" =~ ^[0-9]+$ || "$R_INSTALL_NCPUS" == "0" ]]; then
     die "R_INSTALL_NCPUS must be a positive integer, got: $R_INSTALL_NCPUS"
   fi
+  if [[ "$UPDATE_FROM_LATEST" == "1" && -n "$WORKFLOW_UPDATE_ARCHIVE" ]]; then
+    die "Use either --latest or --archive, not both."
+  fi
+  if [[ -n "${WORKFLOW_UPDATE_URL:-}" && -n "$WORKFLOW_UPDATE_ARCHIVE" ]]; then
+    die "Use either WORKFLOW_UPDATE_URL or --archive, not both."
+  fi
+  if [[ "$MODE" != "workflow" && ( "$UPDATE_FROM_LATEST" == "1" || -n "$WORKFLOW_UPDATE_ARCHIVE" || -n "${WORKFLOW_UPDATE_URL:-}" ) ]]; then
+    die "--latest, --archive and WORKFLOW_UPDATE_URL are only valid with --update workflow."
+  fi
   export OPENBLAS_NUM_THREADS="${OPENBLAS_NUM_THREADS:-1}"
   export OMP_NUM_THREADS="${OMP_NUM_THREADS:-1}"
   export MKL_NUM_THREADS="${MKL_NUM_THREADS:-1}"
@@ -165,6 +183,7 @@ validate_settings() {
   export INSTALL_AUTOZYME_R
   export INSTALL_MALLET
   export UPDATE_FROM_LATEST
+  export WORKFLOW_UPDATE_ARCHIVE
   export R_REMOTES_NO_ERRORS_FROM_WARNINGS="${R_REMOTES_NO_ERRORS_FROM_WARNINGS:-true}"
   export MAKEFLAGS="${MAKEFLAGS:--j1}"
 }
@@ -204,6 +223,17 @@ resolve_path() {
   else
     return 1
   fi
+}
+
+resolve_file_path() {
+  local path="$1"
+  local dir
+  local base
+  path="${path/#\~/$HOME}"
+  [[ -f "$path" ]] || return 1
+  dir="$(cd "$(dirname "$path")" && pwd)"
+  base="$(basename "$path")"
+  printf "%s/%s\n" "$dir" "$base"
 }
 
 is_conda_root() {
@@ -956,7 +986,14 @@ resolve_workflow_update_prefix() {
   die "Cannot find existing env '$ENV_NAME'. Expected: $target. Run full install first or set ENV_NAME correctly."
 }
 
-latest_release_archive_url() {
+workflow_release_archive_url() {
+  local archive_path
+  if [[ -n "$WORKFLOW_UPDATE_ARCHIVE" ]]; then
+    archive_path="$(resolve_file_path "$WORKFLOW_UPDATE_ARCHIVE")" || \
+      die "Local workflow update archive not found: $WORKFLOW_UPDATE_ARCHIVE"
+    printf "file://%s\n" "$archive_path"
+    return
+  fi
   if [[ -n "${WORKFLOW_UPDATE_URL:-}" ]]; then
     printf "%s\n" "$WORKFLOW_UPDATE_URL"
     return
@@ -967,19 +1004,19 @@ latest_release_archive_url() {
     head -n 1
 }
 
-update_workflow_from_latest_release() {
+update_workflow_from_release_archive() {
   resolve_workflow_update_prefix
   local url
   local tmpdir
   local archive
   local topdir
-  url="$(latest_release_archive_url)"
-  [[ -n "$url" ]] || die "Could not resolve latest scenicplus-grn-workflow release archive URL."
-  command -v tar >/dev/null 2>&1 || die "tar is required for --update workflow --latest"
+  url="$(workflow_release_archive_url)"
+  [[ -n "$url" ]] || die "Could not resolve scenicplus-grn-workflow release archive URL."
+  command -v tar >/dev/null 2>&1 || die "tar is required for workflow archive updates."
   tmpdir="$(mktemp -d)"
   trap 'rm -rf "$tmpdir"' RETURN
   archive="$tmpdir/$(basename "$url")"
-  echo "Workflow-only latest update mode."
+  echo "Workflow-only archive update mode."
   echo "Resolved release archive: $url"
   echo "Temporary download: $archive"
   if [[ "$url" == file://* ]]; then
@@ -997,6 +1034,8 @@ update_workflow_from_latest_release() {
     ASSUME_YES="$ASSUME_YES" \
     RELOCATE_INSTALLER=0 \
     UPDATE_FROM_LATEST=0 \
+    WORKFLOW_UPDATE_ARCHIVE= \
+    WORKFLOW_UPDATE_URL= \
     MODE=workflow \
     bash "$topdir/install.sh" --update workflow
   trap - RETURN
@@ -1029,8 +1068,8 @@ main() {
   copy_to_conda_share_if_needed "$@"
 
   if [[ "$MODE" == "workflow" ]]; then
-    if [[ "$UPDATE_FROM_LATEST" == "1" ]]; then
-      update_workflow_from_latest_release
+    if [[ "$UPDATE_FROM_LATEST" == "1" || -n "$WORKFLOW_UPDATE_ARCHIVE" || -n "${WORKFLOW_UPDATE_URL:-}" ]]; then
+      update_workflow_from_release_archive
     fi
     update_workflow_layer_only
     exit 0
