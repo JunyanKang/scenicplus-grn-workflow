@@ -56,6 +56,19 @@ ASSUME_YES=1 CONDA_ROOT=/absolute/path/to/conda bash install.sh
 DONE: SCENIC+ environment is installed and checked.
 ```
 
+## 只更新 workflow 脚本
+
+如果 release 说明写明只是更新 `share/scenicplus-grn` 中的分析脚本、文档或配置，
+不涉及 conda 依赖版本，可以在已有环境上只同步 workflow layer：
+
+```bash
+CONDA_ROOT=/absolute/path/to/conda ASSUME_YES=1 bash install.sh --update workflow
+```
+
+这个模式不会运行 conda/mamba、pip、R、AutoZyme 或 MALLET 安装；它只更新
+`$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn`，刷新 `spgrn-*` wrappers，并运行
+workflow asset 检查。默认 `ENV_NAME=scenicplus-grn`。
+
 ## 后台安装
 
 服务器安装耗时较长时，建议用 `tmux` 或 `nohup`。
@@ -96,6 +109,7 @@ tail -f "$(ls -t logs/install_*.log | head -n 1)"
 |---|---:|---|
 | `CONDA_ROOT` | 自动检测 | 使用的 conda 根目录。 |
 | `ENV_NAME` | `scenicplus-grn` | 创建或更新的环境名。 |
+| `MODE` | `new` | `new` 完整安装/更新环境；`workflow` 只更新 workflow scripts/docs/config。 |
 | `ASSUME_YES` | `0` | 设为 `1` 后使用非交互模式。 |
 | `FORCE` | `0` | 设为 `1` 后重建环境。 |
 | `GITHUB_TRIES` | `3` | GitHub 失败多少次后使用本地归档。 |

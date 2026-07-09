@@ -6,6 +6,9 @@ This release packages a reproducible SCENIC+/GRN workflow toolkit with a conda i
 
 Main deliverables:
 
+- Workflow-only update mode: `bash install.sh --update workflow` syncs
+  `share/scenicplus-grn` scripts, docs and config into an existing environment
+  without running conda/mamba, pip, R, AutoZyme or MALLET installation.
 - pycisTopic pseudobulk export now avoids Linux Ray AF_UNIX socket path-length
   failures by automatically switching long project-local Ray temp paths to a
   short runtime directory.

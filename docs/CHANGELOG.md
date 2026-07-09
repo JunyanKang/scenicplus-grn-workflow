@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.1.57 - 2026-07-09
+
+Adds workflow-only update mode.
+
+Highlights:
+
+- Adds `bash install.sh --update workflow` and `MODE=workflow bash install.sh`
+  for updates that only change workflow scripts, documentation or config under
+  `$CONDA_PREFIX/share/scenicplus-grn`.
+- Workflow-only updates skip conda/mamba solving, pip installs, R installs,
+  AutoZyme and MALLET installation.
+- The updater refreshes `spgrn-*` wrappers and runs an asset-only workflow check
+  after syncing the installed share directory.
+- README documentation now distinguishes full environment installation from
+  workflow-layer updates.
+
 ## 0.1.56 - 2026-07-08
 
 Fixes pycisTopic Ray temp-directory failures and tightens SCENIC+ display

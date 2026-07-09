@@ -61,6 +61,21 @@ A successful run ends with:
 DONE: SCENIC+ environment is installed and checked.
 ```
 
+## Workflow-Only Updates
+
+When the release notes state that only analysis scripts, documentation or config
+under `share/scenicplus-grn` changed, update the workflow layer without touching
+the conda dependency environment:
+
+```bash
+CONDA_ROOT=/absolute/path/to/conda ASSUME_YES=1 bash install.sh --update workflow
+```
+
+This mode does not run conda/mamba, pip, R, AutoZyme or MALLET installation. It
+only updates `$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn`, refreshes the
+`spgrn-*` wrappers and runs the workflow asset check. The default
+`ENV_NAME` is `scenicplus-grn`.
+
 ## Background Installation
 
 Long server installs should run in `tmux` or with `nohup`.
@@ -101,6 +116,7 @@ tail -f "$(ls -t logs/install_*.log | head -n 1)"
 |---|---:|---|
 | `CONDA_ROOT` | auto-detect | Conda root to use. |
 | `ENV_NAME` | `scenicplus-grn` | Environment name to create or update. |
+| `MODE` | `new` | `new` installs/updates the full environment; `workflow` updates scripts/docs/config only. |
 | `ASSUME_YES` | `0` | Set to `1` for non-interactive prompts. |
 | `FORCE` | `0` | Set to `1` to recreate the environment. |
 | `GITHUB_TRIES` | `3` | GitHub attempts before bundled source archives are used. |

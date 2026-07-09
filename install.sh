@@ -46,6 +46,7 @@ usage() {
   cat <<'EOF'
 Usage:
   bash install.sh
+  bash install.sh --update workflow
 
 Recommended workflow:
   tar -xzf scenicplus-grn-workflow-v*.tar.gz
@@ -61,6 +62,7 @@ directory, it offers to copy itself to:
 Modes:
   MODE=new      Create/update a dedicated scenicplus-grn conda environment.
   MODE=active   Install/update the currently activated conda environment.
+  MODE=workflow Update only workflow scripts/docs/config under the existing env.
 
 Options:
   ENV_NAME=scenicplus-grn       Target env name for MODE=new.
@@ -79,6 +81,30 @@ Options:
   PRECHECK_ONLY=1               Check detection/permissions and exit before install.
   LOG_DIR=/path/to/logs         Override installation log directory.
 EOF
+}
+
+parse_cli_args() {
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -h|--help)
+        usage
+        exit 0
+        ;;
+      --update|---update)
+        shift
+        [[ "${1:-}" == "workflow" ]] || die "--update requires: workflow"
+        MODE="workflow"
+        ;;
+      --update-workflow|---update-workflow)
+        MODE="workflow"
+        ;;
+      *)
+        usage
+        die "Unknown argument: $1"
+        ;;
+    esac
+    shift
+  done
 }
 
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
@@ -110,6 +136,12 @@ die() {
 }
 
 validate_settings() {
+  case "$MODE" in
+    new|active|workflow) ;;
+    *)
+      die "MODE must be one of: new, active, workflow. Got: $MODE"
+      ;;
+  esac
   if [[ ! "$GITHUB_TRIES" =~ ^[0-9]+$ ]]; then
     die "GITHUB_TRIES must be a non-negative integer, got: $GITHUB_TRIES"
   fi
@@ -243,6 +275,26 @@ path_is_inside() {
   [[ "$child" == "$parent" || "$child" == "$parent/"* ]]
 }
 
+replace_tree() {
+  local src="$1"
+  local dest="$2"
+  local parent
+  local tmp
+  local backup
+  [[ -d "$src" ]] || die "Source directory not found: $src"
+  parent="$(dirname "$dest")"
+  mkdir -p "$parent"
+  tmp="$parent/.$(basename "$dest").tmp.$$"
+  backup="$parent/.$(basename "$dest").backup.$$"
+  rm -rf "$tmp" "$backup"
+  cp -a "$src" "$tmp"
+  if [[ -e "$dest" ]]; then
+    mv "$dest" "$backup"
+  fi
+  mv "$tmp" "$dest"
+  rm -rf "$backup" || echo "WARNING: could not remove old backup directory: $backup" >&2
+}
+
 copy_distribution_assets() {
   local target_dir="$1"
   rm -rf "$target_dir/bin" "$target_dir/config" "$target_dir/docs"
@@ -285,12 +337,10 @@ copy_distribution_assets() {
     cp -a "$VENDOR_DIR" "$target_dir/.vendor"
   fi
   if [[ -d "$SCRIPT_DIR/modules" ]]; then
-    rm -rf "$target_dir/modules"
-    cp -a "$SCRIPT_DIR/modules" "$target_dir/modules"
+    replace_tree "$SCRIPT_DIR/modules" "$target_dir/modules"
   fi
   if [[ -d "$SCRIPT_DIR/scripts" ]]; then
-    rm -rf "$target_dir/scripts"
-    cp -a "$SCRIPT_DIR/scripts" "$target_dir/scripts"
+    replace_tree "$SCRIPT_DIR/scripts" "$target_dir/scripts"
   fi
 }
 
@@ -878,8 +928,43 @@ run_workflow_asset_check() {
   fi
 }
 
+run_workflow_asset_check_assets_only() {
+  export SCENICPLUS_HOME="$CONDA_PREFIX/share/scenicplus-grn"
+  "$CONDA_PREFIX/bin/python" "$SCENICPLUS_HOME/scripts/check_workflow_installation.py" --skip-imports --skip-commands
+}
+
+resolve_workflow_update_prefix() {
+  local target="$CONDA_ROOT/envs/$ENV_NAME"
+  if [[ -d "$target/conda-meta" && -x "$target/bin/python" ]]; then
+    CONDA_PREFIX="$target"
+    export CONDA_PREFIX
+    return
+  fi
+  if [[ -n "${CONDA_PREFIX:-}" && -d "$CONDA_PREFIX/conda-meta" && -x "$CONDA_PREFIX/bin/python" ]]; then
+    if [[ "$(basename "$CONDA_PREFIX")" == "$ENV_NAME" || "${CONDA_DEFAULT_ENV:-}" == "$ENV_NAME" ]]; then
+      export CONDA_PREFIX
+      return
+    fi
+  fi
+  die "Cannot find existing env '$ENV_NAME'. Expected: $target. Run full install first or set ENV_NAME correctly."
+}
+
+update_workflow_layer_only() {
+  resolve_workflow_update_prefix
+  echo "Workflow-only update mode."
+  echo "Conda root: $CONDA_ROOT"
+  echo "Target environment: $CONDA_PREFIX"
+  echo "No conda/mamba solving, pip install, R install, AutoZyme install, or MALLET install will run."
+  check_writable_dir "$CONDA_PREFIX/share"
+  copy_recipe_into_env
+  run_workflow_asset_check_assets_only
+  echo "DONE: SCENIC+ workflow scripts/docs/config were updated only."
+  echo "Log saved to: $LOG_FILE"
+}
+
 main() {
   setup_logging
+  parse_cli_args "$@"
   validate_settings
 
   local detected_root
@@ -888,6 +973,12 @@ main() {
   CONDA_BIN="$CONDA_ROOT/bin/conda"
 
   copy_to_conda_share_if_needed "$@"
+
+  if [[ "$MODE" == "workflow" ]]; then
+    update_workflow_layer_only
+    exit 0
+  fi
+
   ensure_vendor_available
   check_permissions
 
