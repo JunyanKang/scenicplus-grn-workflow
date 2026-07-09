@@ -59,41 +59,21 @@ DONE: SCENIC+ environment is installed and checked.
 ## 只更新 workflow 脚本
 
 如果 release 说明写明只是更新 `share/scenicplus-grn` 中的分析脚本、文档或配置，
-不涉及 conda 依赖版本，可以在已有环境上只同步 workflow layer。先下载并解压新的
-release package：
+不涉及 conda 依赖版本，可以在已有环境上只同步 workflow layer。进入任意已解压的
+`scenicplus-grn-workflow` 目录；如果按默认安装器迁移过，通常是
+`$CONDA_ROOT/share/scenicplus-grn-workflow`：
 
 ```bash
 CONDA_ROOT=/absolute/path/to/conda
 ENV_NAME=scenicplus-grn
-DOWNLOAD_URL="$(
-  curl -fsSL https://api.github.com/repos/JunyanKang/scenicplus-grn-workflow/releases/latest |
-    grep -Eo 'https://github.com/JunyanKang/scenicplus-grn-workflow/releases/download/[^"]+/scenicplus-grn-workflow-v[^"]+\.tar\.gz' |
-    head -n 1
-)"
-test -n "$DOWNLOAD_URL"
-ARCHIVE="$CONDA_ROOT/$(basename "$DOWNLOAD_URL")"
-
-cd "$CONDA_ROOT"
-rm -rf "$CONDA_ROOT/scenicplus-grn-workflow"
-rm -f "$ARCHIVE"
-
-curl -L --retry 3 -o "$ARCHIVE" "$DOWNLOAD_URL"
-
-tar -xzf "$ARCHIVE" -C "$CONDA_ROOT"
-cd "$CONDA_ROOT/scenicplus-grn-workflow"
+cd "$CONDA_ROOT/share/scenicplus-grn-workflow"
+CONDA_ROOT="$CONDA_ROOT" ENV_NAME="$ENV_NAME" ASSUME_YES=1 bash install.sh --update workflow --latest
 ```
 
-然后只更新 workflow layer：
-
-```bash
-CONDA_ROOT="$CONDA_ROOT" ENV_NAME="$ENV_NAME" ASSUME_YES=1 bash install.sh --update workflow
-```
-
-这个模式不会运行 conda/mamba、pip、R、AutoZyme 或 MALLET 安装；它只更新
-`$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn`，刷新 `spgrn-*` wrappers，并运行
-workflow asset 检查。上面的 `rm -rf "$CONDA_ROOT/scenicplus-grn-workflow"` 只删除旧的
-release 解压目录，不会删除 conda 环境；不要删除
-`$CONDA_ROOT/envs/$ENV_NAME`。
+`--latest` 会在脚本内部解析最新 release、下载到临时目录、解压并委托新包执行
+workflow-only 更新。这个模式不会运行 conda/mamba、pip、R、AutoZyme 或 MALLET 安装；
+它只更新 `$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn`，刷新 `spgrn-*` wrappers，
+并运行 workflow asset 检查。
 
 更新后可检查：
 

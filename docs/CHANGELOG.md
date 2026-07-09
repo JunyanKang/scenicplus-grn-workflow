@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.1.60 - 2026-07-09
+
+Encapsulates latest-release workflow updates in the installer.
+
+Highlights:
+
+- Adds `bash install.sh --update workflow --latest`, which resolves the latest
+  GitHub release archive, downloads it to a temporary directory, unpacks it and
+  delegates workflow-only updating to the freshly downloaded package.
+- Keeps dependency environments untouched in latest workflow-update mode; conda,
+  mamba, pip, R, AutoZyme and MALLET installers are not run.
+- Simplifies README update instructions by removing the manual
+  `curl | grep | tar` release-download block.
+
 ## 0.1.59 - 2026-07-09
 
 Removes hard-coded release versions from README update commands.

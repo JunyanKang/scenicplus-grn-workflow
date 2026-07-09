@@ -6,6 +6,9 @@ This release packages a reproducible SCENIC+/GRN workflow toolkit with a conda i
 
 Main deliverables:
 
+- `bash install.sh --update workflow --latest` now resolves, downloads and
+  unpacks the latest release package internally, so users no longer copy a long
+  manual GitHub API download block.
 - README workflow-only update commands now resolve the latest release archive
   dynamically instead of hard-coding a literal version number.
 - README workflow-only update instructions now include the safe sequence for

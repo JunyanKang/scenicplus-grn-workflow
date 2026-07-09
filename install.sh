@@ -8,6 +8,7 @@ DOCS_DIR="${DOCS_DIR:-$SCRIPT_DIR/docs}"
 LOCKS_DIR="${LOCKS_DIR:-$CONFIG_DIR/locks}"
 ENV_NAME="${ENV_NAME:-scenicplus-grn}"
 MODE="${MODE:-new}"
+UPDATE_FROM_LATEST="${UPDATE_FROM_LATEST:-0}"
 INSTALL_R="${INSTALL_R:-1}"
 FORCE="${FORCE:-0}"
 ALLOW_BASE="${ALLOW_BASE:-0}"
@@ -47,6 +48,7 @@ usage() {
 Usage:
   bash install.sh
   bash install.sh --update workflow
+  bash install.sh --update workflow --latest
 
 Recommended workflow:
   tar -xzf scenicplus-grn-workflow-v*.tar.gz
@@ -80,6 +82,7 @@ Options:
   RELOCATE_INSTALLER=0          Do not offer to copy workflow package under conda root.
   PRECHECK_ONLY=1               Check detection/permissions and exit before install.
   LOG_DIR=/path/to/logs         Override installation log directory.
+  UPDATE_FROM_LATEST=1          With MODE=workflow, download the latest release first.
 EOF
 }
 
@@ -97,6 +100,9 @@ parse_cli_args() {
         ;;
       --update-workflow|---update-workflow)
         MODE="workflow"
+        ;;
+      --latest|--from-latest)
+        UPDATE_FROM_LATEST="1"
         ;;
       *)
         usage
@@ -158,6 +164,7 @@ validate_settings() {
   export INSTALL_AUTOZYME
   export INSTALL_AUTOZYME_R
   export INSTALL_MALLET
+  export UPDATE_FROM_LATEST
   export R_REMOTES_NO_ERRORS_FROM_WARNINGS="${R_REMOTES_NO_ERRORS_FROM_WARNINGS:-true}"
   export MAKEFLAGS="${MAKEFLAGS:--j1}"
 }
@@ -949,6 +956,53 @@ resolve_workflow_update_prefix() {
   die "Cannot find existing env '$ENV_NAME'. Expected: $target. Run full install first or set ENV_NAME correctly."
 }
 
+latest_release_archive_url() {
+  if [[ -n "${WORKFLOW_UPDATE_URL:-}" ]]; then
+    printf "%s\n" "$WORKFLOW_UPDATE_URL"
+    return
+  fi
+  command -v curl >/dev/null 2>&1 || die "curl is required for --update workflow --latest"
+  curl -fsSL https://api.github.com/repos/JunyanKang/scenicplus-grn-workflow/releases/latest |
+    grep -Eo 'https://github.com/JunyanKang/scenicplus-grn-workflow/releases/download/[^"]+/scenicplus-grn-workflow-v[^"]+\.tar\.gz' |
+    head -n 1
+}
+
+update_workflow_from_latest_release() {
+  resolve_workflow_update_prefix
+  local url
+  local tmpdir
+  local archive
+  local topdir
+  url="$(latest_release_archive_url)"
+  [[ -n "$url" ]] || die "Could not resolve latest scenicplus-grn-workflow release archive URL."
+  command -v tar >/dev/null 2>&1 || die "tar is required for --update workflow --latest"
+  tmpdir="$(mktemp -d)"
+  trap 'rm -rf "$tmpdir"' RETURN
+  archive="$tmpdir/$(basename "$url")"
+  echo "Workflow-only latest update mode."
+  echo "Resolved release archive: $url"
+  echo "Temporary download: $archive"
+  if [[ "$url" == file://* ]]; then
+    cp "${url#file://}" "$archive"
+  else
+    curl -L --retry 3 -o "$archive" "$url"
+  fi
+  tar -xzf "$archive" -C "$tmpdir"
+  topdir="$(find "$tmpdir" -mindepth 1 -maxdepth 1 -type d -name 'scenicplus-grn-workflow*' | head -n 1)"
+  [[ -d "$topdir" && -x "$topdir/install.sh" ]] || die "Downloaded archive did not contain scenicplus-grn-workflow/install.sh"
+  echo "Running workflow-only update from: $topdir"
+  env \
+    CONDA_ROOT="$CONDA_ROOT" \
+    ENV_NAME="$ENV_NAME" \
+    ASSUME_YES="$ASSUME_YES" \
+    RELOCATE_INSTALLER=0 \
+    UPDATE_FROM_LATEST=0 \
+    MODE=workflow \
+    bash "$topdir/install.sh" --update workflow
+  trap - RETURN
+  rm -rf "$tmpdir"
+}
+
 update_workflow_layer_only() {
   resolve_workflow_update_prefix
   echo "Workflow-only update mode."
@@ -975,6 +1029,9 @@ main() {
   copy_to_conda_share_if_needed "$@"
 
   if [[ "$MODE" == "workflow" ]]; then
+    if [[ "$UPDATE_FROM_LATEST" == "1" ]]; then
+      update_workflow_from_latest_release
+    fi
     update_workflow_layer_only
     exit 0
   fi

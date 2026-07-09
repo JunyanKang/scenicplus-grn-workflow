@@ -65,42 +65,22 @@ DONE: SCENIC+ environment is installed and checked.
 
 When the release notes state that only analysis scripts, documentation or config
 under `share/scenicplus-grn` changed, update the workflow layer without touching
-the conda dependency environment. First download and unpack the new release
-package:
+the conda dependency environment. Enter any unpacked `scenicplus-grn-workflow`
+directory. If the installer relocated the package with the default settings,
+this is usually `$CONDA_ROOT/share/scenicplus-grn-workflow`:
 
 ```bash
 CONDA_ROOT=/absolute/path/to/conda
 ENV_NAME=scenicplus-grn
-DOWNLOAD_URL="$(
-  curl -fsSL https://api.github.com/repos/JunyanKang/scenicplus-grn-workflow/releases/latest |
-    grep -Eo 'https://github.com/JunyanKang/scenicplus-grn-workflow/releases/download/[^"]+/scenicplus-grn-workflow-v[^"]+\.tar\.gz' |
-    head -n 1
-)"
-test -n "$DOWNLOAD_URL"
-ARCHIVE="$CONDA_ROOT/$(basename "$DOWNLOAD_URL")"
-
-cd "$CONDA_ROOT"
-rm -rf "$CONDA_ROOT/scenicplus-grn-workflow"
-rm -f "$ARCHIVE"
-
-curl -L --retry 3 -o "$ARCHIVE" "$DOWNLOAD_URL"
-
-tar -xzf "$ARCHIVE" -C "$CONDA_ROOT"
-cd "$CONDA_ROOT/scenicplus-grn-workflow"
+cd "$CONDA_ROOT/share/scenicplus-grn-workflow"
+CONDA_ROOT="$CONDA_ROOT" ENV_NAME="$ENV_NAME" ASSUME_YES=1 bash install.sh --update workflow --latest
 ```
 
-Then update only the workflow layer:
-
-```bash
-CONDA_ROOT="$CONDA_ROOT" ENV_NAME="$ENV_NAME" ASSUME_YES=1 bash install.sh --update workflow
-```
-
+`--latest` resolves the latest release archive, downloads it to a temporary
+directory, unpacks it and delegates the workflow-only update to the new package.
 This mode does not run conda/mamba, pip, R, AutoZyme or MALLET installation. It
 only updates `$CONDA_ROOT/envs/$ENV_NAME/share/scenicplus-grn`, refreshes the
-`spgrn-*` wrappers and runs the workflow asset check. The
-`rm -rf "$CONDA_ROOT/scenicplus-grn-workflow"` command above only removes the old
-unpacked release directory. It does not remove the conda environment; do not
-delete `$CONDA_ROOT/envs/$ENV_NAME`.
+`spgrn-*` wrappers and runs the workflow asset check.
 
 Check the update:
 
