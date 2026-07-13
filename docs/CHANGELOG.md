@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.65 - 2026-07-13
+
+Makes pycisTopic fragment precheck messages more student-facing.
+
+- Writes both TSV and Markdown reports for metacell fragment barcode prechecks.
+- Prints a concise precheck summary into the main
+  `run_pycistopic_workflow_<timestamp>.log`.
+- Documents the precheck reports in Step 5 of the Chinese and English
+  step-by-step guides.
+
 ## 0.1.64 - 2026-07-13
 
 Improves pycisTopic metacell fragment diagnostics.

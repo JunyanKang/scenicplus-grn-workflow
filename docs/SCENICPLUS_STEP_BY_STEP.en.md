@@ -408,7 +408,17 @@ spgrn-setup-workflow-params --section pycistopic
 spgrn-run-pycistopic-workflow
 ```
 
-The command writes its own timestamped log under `$PROJECT_DIR/logs/`.
+The command writes its own timestamped log under `$PROJECT_DIR/logs/`. Before
+pycisTopic pseudobulk export starts, the workflow checks that metacell fragments
+are readable, have valid BED columns and share barcodes with the active
+metadata. The check summary is printed to the main log.
+
+If this step fails, inspect:
+
+```text
+results/pycistopic/qc/metacell_fragment_barcode_precheck.tsv
+results/pycistopic/qc/metacell_fragment_barcode_precheck.md
+```
 
 5.3-If a previous run was interrupted, validate pseudobulk files:
 

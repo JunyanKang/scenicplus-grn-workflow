@@ -8,9 +8,11 @@ Main deliverables:
 
 - pycisTopic metacell pseudobulk generation now performs an early fragment
   file and barcode-overlap precheck, writing
-  `results/pycistopic/qc/metacell_fragment_barcode_precheck.tsv` before
-  calling pycisTopic. This turns empty metacell fragments or metadata/barcode
-  mismatches into explicit per-sample diagnostics.
+  `results/pycistopic/qc/metacell_fragment_barcode_precheck.tsv` and
+  `results/pycistopic/qc/metacell_fragment_barcode_precheck.md` before calling
+  pycisTopic. The precheck summary is also printed into the main pycisTopic log.
+  This turns empty metacell fragments or metadata/barcode mismatches into
+  explicit per-sample diagnostics.
 - Installed `spgrn-*` Python entry points now prepend the active conda
   environment `bin/` directory before running workflow scripts, so subprocesses
   resolve `Rscript`, `snakemake`, `tabix` and other tools from the installed

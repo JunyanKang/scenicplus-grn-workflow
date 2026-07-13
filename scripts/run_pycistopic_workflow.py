@@ -332,6 +332,7 @@ def inspect_fragment_barcode_overlap(
         "sample_id": sample_id,
         "fragments_path": str(fragments_path),
         "expected_barcodes": len(expected_barcodes),
+        "checked_line_limit": max_lines,
         "sampled_lines": 0,
         "first_nonempty_column_count": 0,
         "sampled_unique_fragment_barcodes": 0,
@@ -379,6 +380,73 @@ def inspect_fragment_barcode_overlap(
     return row
 
 
+def fragment_precheck_recommendation(status: str) -> str:
+    if status == "ok":
+        return "No action required."
+    if status in {"empty_or_missing", "empty"}:
+        return (
+            "Rerun Step 4.5 spgrn-reassign-fragments-to-metacells for this sample. "
+            "If the file stays empty, verify that the active cells exist in the original fragments file."
+        )
+    if status == "invalid_columns":
+        return (
+            "Regenerate metacell fragments. A valid fragments file must contain at least "
+            "chrom, start, end and barcode columns."
+        )
+    if status == "no_sampled_barcode_overlap":
+        return (
+            "Check sample_id and barcode columns in inputs/cell_metadata.tsv, "
+            "inputs/sample_sheet.tsv and work/metacell_fragments/*.tsv.gz. "
+            "The active metadata likely does not match the active metacell fragments."
+        )
+    if status == "read_error":
+        return "Check whether the fragments file is readable gzip/text and not truncated."
+    return "Inspect inputs/cell_metadata.tsv, inputs/sample_sheet.tsv and metacell fragments."
+
+
+def write_metacell_fragment_precheck_markdown(report: pd.DataFrame, path: Path) -> None:
+    lines = [
+        "# Metacell Fragment Barcode Precheck",
+        "",
+        "This check runs before pycisTopic pseudobulk export. It validates that each active sample has a readable metacell fragments file and that sampled fragment barcodes overlap the active metadata barcode column.",
+        "",
+        "| sample_id | status | expected_barcodes | sampled_lines | sampled_unique_fragment_barcodes | sampled_overlap_barcodes | first_nonempty_column_count | recommendation |",
+        "|---|---:|---:|---:|---:|---:|---:|---|",
+    ]
+    for row in report.itertuples(index=False):
+        status = str(row.status)
+        recommendation = fragment_precheck_recommendation(status)
+        lines.append(
+            "| "
+            + " | ".join(
+                [
+                    str(row.sample_id),
+                    status,
+                    str(row.expected_barcodes),
+                    str(row.sampled_lines),
+                    str(row.sampled_unique_fragment_barcodes),
+                    str(row.sampled_overlap_barcodes),
+                    str(row.first_nonempty_column_count),
+                    recommendation,
+                ]
+            )
+            + " |"
+        )
+    lines.extend(
+        [
+            "",
+            "Status definitions:",
+            "",
+            "- `ok`: the sampled fragments are readable and at least one sampled barcode overlaps active metadata.",
+            "- `empty_or_missing` or `empty`: the metacell fragments file is absent, zero bytes or contains no non-empty rows.",
+            "- `invalid_columns`: the first non-empty row has fewer than four BED columns.",
+            "- `no_sampled_barcode_overlap`: sampled fragment barcodes do not overlap active metadata barcodes.",
+            "- `read_error`: the fragments file could not be opened or decoded.",
+        ]
+    )
+    path.write_text("\n".join(lines) + "\n")
+
+
 def precheck_metacell_fragments(
     sample_sheet: pd.DataFrame,
     pseudobulk_meta: pd.DataFrame,
@@ -401,8 +469,21 @@ def precheck_metacell_fragments(
             )
         )
     report = pd.DataFrame(rows)
-    report.to_csv(RESULTS / "qc" / "metacell_fragment_barcode_precheck.tsv", sep="\t", index=False)
+    report["recommendation"] = [
+        fragment_precheck_recommendation(str(status))
+        for status in report["status"].astype(str)
+    ]
+    tsv_path = RESULTS / "qc" / "metacell_fragment_barcode_precheck.tsv"
+    md_path = RESULTS / "qc" / "metacell_fragment_barcode_precheck.md"
+    report.to_csv(tsv_path, sep="\t", index=False)
+    write_metacell_fragment_precheck_markdown(report, md_path)
     bad = report.loc[report["status"].astype(str) != "ok"]
+    ok_count = report.shape[0] - bad.shape[0]
+    print(
+        "metacell_fragment_precheck\t"
+        f"ok_samples={ok_count}\tfailed_samples={bad.shape[0]}\t"
+        f"report={tsv_path}\tmarkdown={md_path}"
+    )
     if not bad.empty:
         details = "; ".join(
             f"{row.sample_id}: {row.status} ({row.message})"
@@ -411,7 +492,7 @@ def precheck_metacell_fragments(
         raise ValueError(
             "Metacell fragment precheck failed before pycisTopic pseudobulk export: "
             + details
-            + f". See {RESULTS / 'qc' / 'metacell_fragment_barcode_precheck.tsv'}"
+            + f". See {tsv_path} and {md_path}"
         )
 
 

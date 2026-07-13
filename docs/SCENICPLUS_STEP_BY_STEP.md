@@ -368,7 +368,14 @@ spgrn-setup-workflow-params --section pycistopic
 spgrn-run-pycistopic-workflow
 ```
 
-该命令会自动在 `$PROJECT_DIR/logs/` 下写入带时间戳的日志。
+该命令会自动在 `$PROJECT_DIR/logs/` 下写入带时间戳的日志。正式进入 pycisTopic pseudobulk export 前，workflow 会先检查 metacell fragments 是否可读、BED 列数是否正确，以及 fragments barcode 是否和 active metadata barcode 有交集。检查摘要会写入主日志。
+
+如果这一步失败，先查看：
+
+```text
+results/pycistopic/qc/metacell_fragment_barcode_precheck.tsv
+results/pycistopic/qc/metacell_fragment_barcode_precheck.md
+```
 
 5.3-如曾中断，验证 pseudobulk 文件：
 
