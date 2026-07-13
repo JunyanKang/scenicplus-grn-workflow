@@ -6,6 +6,11 @@ This release packages a reproducible SCENIC+/GRN workflow toolkit with a conda i
 
 Main deliverables:
 
+- pycisTopic metacell pseudobulk generation now performs an early fragment
+  file and barcode-overlap precheck, writing
+  `results/pycistopic/qc/metacell_fragment_barcode_precheck.tsv` before
+  calling pycisTopic. This turns empty metacell fragments or metadata/barcode
+  mismatches into explicit per-sample diagnostics.
 - Installed `spgrn-*` Python entry points now prepend the active conda
   environment `bin/` directory before running workflow scripts, so subprocesses
   resolve `Rscript`, `snakemake`, `tabix` and other tools from the installed

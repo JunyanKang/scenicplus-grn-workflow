@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from datetime import datetime
 import csv
+import gzip
 import hashlib
 import json
 import os
@@ -314,6 +315,106 @@ def expected_pseudobulk_bed_paths(labels: Sequence[str]) -> dict[str, str]:
     }
 
 
+def open_text_maybe_gzip(path: Path):
+    if path.suffix == ".gz":
+        return gzip.open(path, "rt")
+    return path.open("rt")
+
+
+def inspect_fragment_barcode_overlap(
+    *,
+    sample_id: str,
+    fragments_path: Path,
+    expected_barcodes: set[str],
+    max_lines: int = 200_000,
+) -> dict[str, object]:
+    row: dict[str, object] = {
+        "sample_id": sample_id,
+        "fragments_path": str(fragments_path),
+        "expected_barcodes": len(expected_barcodes),
+        "sampled_lines": 0,
+        "first_nonempty_column_count": 0,
+        "sampled_unique_fragment_barcodes": 0,
+        "sampled_overlap_barcodes": 0,
+        "status": "ok",
+        "message": "",
+    }
+    if not fragments_path.exists() or fragments_path.stat().st_size == 0:
+        row["status"] = "empty_or_missing"
+        row["message"] = "fragment file is missing or zero bytes"
+        return row
+    seen: set[str] = set()
+    try:
+        with open_text_maybe_gzip(fragments_path) as handle:
+            for raw in handle:
+                line = raw.rstrip("\n")
+                if not line:
+                    continue
+                fields = line.split("\t")
+                if not row["first_nonempty_column_count"]:
+                    row["first_nonempty_column_count"] = len(fields)
+                if len(fields) >= 4:
+                    seen.add(fields[3])
+                row["sampled_lines"] = int(row["sampled_lines"]) + 1
+                if int(row["sampled_lines"]) >= max_lines:
+                    break
+    except Exception as exc:
+        row["status"] = "read_error"
+        row["message"] = str(exc)
+        return row
+    row["sampled_unique_fragment_barcodes"] = len(seen)
+    row["sampled_overlap_barcodes"] = len(seen & expected_barcodes)
+    if int(row["sampled_lines"]) == 0:
+        row["status"] = "empty"
+        row["message"] = "fragment file contains no non-empty rows"
+    elif int(row["first_nonempty_column_count"]) < 4:
+        row["status"] = "invalid_columns"
+        row["message"] = "fragment rows must contain at least four BED columns"
+    elif expected_barcodes and len(seen & expected_barcodes) == 0:
+        row["status"] = "no_sampled_barcode_overlap"
+        row["message"] = (
+            "no sampled fragment barcodes overlap cell_metadata barcode values; "
+            "check Step 4 metacell fragment reassignment, sample_id and barcode columns"
+        )
+    return row
+
+
+def precheck_metacell_fragments(
+    sample_sheet: pd.DataFrame,
+    pseudobulk_meta: pd.DataFrame,
+    fragments: Mapping[str, str],
+) -> None:
+    rows = []
+    for sample_id in sample_sheet["sample_id"].astype(str).tolist():
+        expected = set(
+            pseudobulk_meta.loc[
+                pseudobulk_meta["sample_id"].astype(str).eq(sample_id),
+                "barcode",
+            ].astype(str)
+        )
+        path = Path(fragments[sample_id])
+        rows.append(
+            inspect_fragment_barcode_overlap(
+                sample_id=sample_id,
+                fragments_path=path,
+                expected_barcodes=expected,
+            )
+        )
+    report = pd.DataFrame(rows)
+    report.to_csv(RESULTS / "qc" / "metacell_fragment_barcode_precheck.tsv", sep="\t", index=False)
+    bad = report.loc[report["status"].astype(str) != "ok"]
+    if not bad.empty:
+        details = "; ".join(
+            f"{row.sample_id}: {row.status} ({row.message})"
+            for row in bad.itertuples(index=False)
+        )
+        raise ValueError(
+            "Metacell fragment precheck failed before pycisTopic pseudobulk export: "
+            + details
+            + f". See {RESULTS / 'qc' / 'metacell_fragment_barcode_precheck.tsv'}"
+        )
+
+
 def default_short_ray_temp_dir() -> Path:
     base = Path(os.environ.get("SCENICPLUS_RAY_TMPDIR") or os.environ.get("RAY_TMPDIR") or "/tmp")
     digest = hashlib.sha1(str(PROJECT).encode("utf-8")).hexdigest()[:10]
@@ -616,6 +717,7 @@ def run_pseudobulk_and_peak_calling(
     pseudobulk_meta = cell_meta.set_index("cell_id", drop=False)[
         ["sample_id", "cell_label", "barcode"]
     ].copy()
+    precheck_metacell_fragments(sample_sheet, pseudobulk_meta, fragments)
     label_order = pd.Series(pseudobulk_meta["cell_label"].astype(str).unique()).tolist()
     expected_bed_paths = expected_pseudobulk_bed_paths(label_order)
     existing_ok = {
@@ -675,7 +777,10 @@ def run_pseudobulk_and_peak_calling(
     ]
     if missing_bed:
         raise FileNotFoundError(
-            "Pseudobulk BED files were not created or are empty: " + "; ".join(missing_bed)
+            "Pseudobulk BED files were not created or are empty: "
+            + "; ".join(missing_bed)
+            + f". See {RESULTS / 'qc' / 'metacell_fragment_barcode_precheck.tsv'} "
+            "to confirm fragment file validity and barcode overlap."
         )
 
     macs_path = params.get("macs_path", "macs2") or "macs2"

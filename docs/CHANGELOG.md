@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.64 - 2026-07-13
+
+Improves pycisTopic metacell fragment diagnostics.
+
+- Adds a pre-export metacell fragment barcode-overlap check before pycisTopic
+  pseudobulk generation.
+- Writes `results/pycistopic/qc/metacell_fragment_barcode_precheck.tsv` with
+  per-sample fragment file status, sampled BED column count and sampled barcode
+  overlap against `inputs/cell_metadata.tsv`.
+- Fails early with an actionable message when metacell fragments are empty,
+  malformed or disconnected from the active metadata barcode column.
+
 ## 0.1.63 - 2026-07-09
 
 Hardens installed workflow command execution.
